@@ -333,9 +333,9 @@ export function CasesBankClient() {
                       <button
                         type="button"
                         onClick={() => void startCase(row.id)}
-                        className="text-left text-[13.5px] font-semibold text-[var(--color-ink)] hover:underline"
+                        className="num-mono text-left text-[13px] font-semibold tracking-tight text-[var(--color-ink)] hover:underline"
                       >
-                        {row.title}
+                        Case #{row.id}
                       </button>
                     </td>
                     <td

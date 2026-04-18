@@ -67,18 +67,19 @@ function matchTermsForPhrase(phrase: string): string[] {
   return uniq;
 }
 
-function genericPhysicalExam(diseaseLabel: string): PhysicalExamEntry[] {
-  const d = diseaseLabel || "this presentation";
+function genericPhysicalExam(): PhysicalExamEntry[] {
   return [
     {
       finding_key: "palpate_rlq",
-      student_finding: `Focal tenderness may be relevant depending on ${d}—you note discomfort with deep palpation in the RLQ.`,
+      student_finding:
+        "You note discomfort with deep palpation in the right lower quadrant.",
       pain_delta: 1,
       visual: { highlight: "rlq", severity: "medium" },
     },
     {
       finding_key: "palpate_abdomen_general",
-      student_finding: `The abdomen is soft with nonspecific findings on this pass; you remain concerned about ${d}.`,
+      student_finding:
+        "The abdomen is soft with nonspecific findings on this pass.",
       pain_delta: 0,
       visual: { highlight: "abdomen", severity: "low" },
     },
@@ -118,13 +119,12 @@ export function buildCaseDocumentFromDatasetRow(row: DatasetCaseRow): CaseDocume
   const idStr = String(row.id);
   const disease = row.Disease?.trim() ?? "";
   const symptoms = rowSymptoms(row);
-  const title = disease || `Case ${idStr}`;
+  const title = `Case ${idStr}`;
 
-  const chief_complaint = disease || symptoms[0]?.text || "Patient with undifferentiated symptoms.";
+  const chief_complaint =
+    symptoms[0]?.text || "Patient with undifferentiated symptoms.";
 
-  const history_of_present_illness: string[] = [];
-  if (disease) history_of_present_illness.push(`Working problem label: ${disease}.`);
-  for (const s of symptoms) history_of_present_illness.push(s.text);
+  const history_of_present_illness: string[] = symptoms.map((s) => s.text);
 
   const associated_symptoms = symptoms.map((s) => s.text);
 
@@ -133,16 +133,6 @@ export function buildCaseDocumentFromDatasetRow(row: DatasetCaseRow): CaseDocume
     default:
       "I’m not sure how to answer that—can you ask me in another way about how I’ve been feeling?",
   };
-
-  if (disease) {
-    const fk = "disease_named";
-    reveal_rules.push({
-      id: "disease_named",
-      match_terms: matchTermsForPhrase(disease),
-      reveals: [fk],
-    });
-    patient_utterances_by_fact[fk] = `They told me it might be related to ${disease}, but I’m here because of how I feel.`;
-  }
 
   for (let i = 0; i < symptoms.length; i++) {
     const factKey = `symptom_${i + 1}`;
@@ -160,15 +150,6 @@ export function buildCaseDocumentFromDatasetRow(row: DatasetCaseRow): CaseDocume
     category: "history" as const,
     required_fact_keys: [`symptom_${i + 1}`],
   }));
-
-  if (disease) {
-    checklist.unshift({
-      id: "hx_disease",
-      text: "Clarify the working diagnosis or problem label in patient terms",
-      category: "history",
-      required_fact_keys: ["disease_named"],
-    });
-  }
 
   checklist.push({
     id: "exam_rlq",
@@ -192,7 +173,7 @@ export function buildCaseDocumentFromDatasetRow(row: DatasetCaseRow): CaseDocume
     history_of_present_illness,
     associated_symptoms,
     negatives: [],
-    physical_exam_findings: genericPhysicalExam(disease || "the presentation"),
+    physical_exam_findings: genericPhysicalExam(),
     hidden_red_flags: [],
     emotional_profile: "Variable anxiety depending on symptom severity; receptive to reassurance.",
     reveal_rules,
