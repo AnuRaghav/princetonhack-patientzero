@@ -1,36 +1,43 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function MarketingPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<null | "random">(null);
   const [error, setError] = useState<string | null>(null);
 
-  const start = async () => {
-    setLoading(true);
+  const startRandom = async () => {
+    setLoading("random");
     setError(null);
     try {
+      const pick = await fetch("/api/cases/random");
+      const body = (await pick.json()) as { id?: string; error?: string };
+      if (!pick.ok) {
+        setError(body.error ?? "Random case failed");
+        return;
+      }
+      if (!body.id) {
+        setError("No case id returned");
+        return;
+      }
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caseId: "appendicitis" }),
+        body: JSON.stringify({ caseId: body.id }),
       });
       const data = (await res.json()) as { sessionId?: string; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Could not start session");
         return;
       }
-      if (!data.sessionId) {
-        setError("Unexpected response");
-        return;
-      }
-      router.push(`/sim/${data.sessionId}`);
+      if (data.sessionId) router.push(`/sim/${data.sessionId}`);
     } catch {
       setError("Network error");
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
@@ -42,23 +49,29 @@ export default function MarketingPage() {
           Medical education simulations with a deterministic clinical core.
         </h1>
         <p className="max-w-3xl text-lg text-white/70">
-          Students interview an AI standardized patient and perform a virtual physical exam on an interactive 3D body.
-          Case JSON is the source of truth; the model only shapes natural language within an allowlist of facts.
+          Students interview an AI standardized patient and practice a structured encounter. Cases load from your
+          Supabase dataset; the engine reveals findings and exam results server-side before any model narration.
         </p>
       </header>
       <section className="grid gap-6 md:grid-cols-3">
-        <Feature title="Structured cases" body="Chief complaint, HPI, exam findings, and reveal rules live in versioned JSON." />
-        <Feature title="Deterministic engine" body="Revealed facts and exam results are computed server-side before any LLM call." />
-        <Feature title="Debrief-ready" body="Transcript plus checklist progress roll into a scored report for rapid feedback." />
+        <Feature title="Structured cases" body="Disease and symptom columns are projected into a full simulation document." />
+        <Feature title="Deterministic engine" body="Revealed facts and exam results are computed server-side first." />
+        <Feature title="Debrief-ready" body="Transcript and checklist roll into a scored report." />
       </section>
       <div className="flex flex-wrap items-center gap-4">
+        <Link
+          href="/cases"
+          className="rounded-2xl bg-sky-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-sky-500/30 transition hover:bg-sky-400"
+        >
+          Open case bank
+        </Link>
         <button
           type="button"
-          onClick={() => void start()}
-          disabled={loading}
-          className="rounded-2xl bg-sky-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-sky-500/30 transition enabled:hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => void startRandom()}
+          disabled={loading !== null}
+          className="rounded-2xl border border-white/20 px-6 py-3 text-base font-semibold text-white transition hover:border-sky-400/60 hover:text-white disabled:opacity-50"
         >
-          {loading ? "Starting…" : "Start appendicitis case"}
+          {loading === "random" ? "Starting…" : "Random case"}
         </button>
         {error ? <span className="text-sm text-rose-300">{error}</span> : null}
       </div>

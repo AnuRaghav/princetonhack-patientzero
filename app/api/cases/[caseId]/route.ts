@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { loadCaseFromDisk } from "@/lib/cases/loader";
+import { loadCase } from "@/lib/cases/loader";
 import { publicCaseSummary } from "@/lib/sim/sessionAssembler";
 
 type RouteParams = { params: Promise<{ caseId: string }> };
@@ -8,7 +8,7 @@ type RouteParams = { params: Promise<{ caseId: string }> };
 export async function GET(_req: Request, ctx: RouteParams) {
   const { caseId } = await ctx.params;
   try {
-    const caseDoc = await loadCaseFromDisk(caseId);
+    const caseDoc = await loadCase(caseId);
     return NextResponse.json({
       ...publicCaseSummary(caseDoc),
       personality: caseDoc.personality,

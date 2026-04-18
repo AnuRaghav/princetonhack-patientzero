@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { proctorScorer } from "@/lib/ai/proctorScorer";
 import { ScoreRequestSchema, ScoreResponseSchema } from "@/lib/api/schemas";
-import { loadCaseFromDisk } from "@/lib/cases/loader";
+import { loadCase } from "@/lib/cases/loader";
 import { toSessionRow, toTranscriptRow } from "@/lib/session/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   }
 
   const session = toSessionRow(sessionRow);
-  const caseDoc = await loadCaseFromDisk(session.case_id);
+  const caseDoc = await loadCase(session.case_id);
 
   const { data: turns, error: tErr } = await supabase
     .from("transcript_turns")

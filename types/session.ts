@@ -1,4 +1,5 @@
 import type { ExamActionRecord } from "./exam";
+import type { DiagnosisHypothesis, EncounterFindings } from "./findings";
 
 export type SessionStatus = "active" | "completed" | "archived";
 
@@ -11,6 +12,14 @@ export type SessionRow = {
   pain_level: number;
   revealed_facts: string[];
   completed_exam_actions: ExamActionRecord[];
+  /**
+   * Structured projection of everything the student has discovered so far.
+   * Derived deterministically from revealed_facts + completed_exam_actions
+   * + pain/emotion + diagnosis_hypotheses. The 3D body model reads from this.
+   */
+  discovered_findings: EncounterFindings;
+  /** Append-only list of diagnoses the student has submitted. */
+  diagnosis_hypotheses: DiagnosisHypothesis[];
   created_at: string;
   updated_at: string;
 };

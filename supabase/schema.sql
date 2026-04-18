@@ -26,6 +26,8 @@ create table if not exists public.sessions (
   pain_level int not null default 4,
   revealed_facts jsonb not null default '[]'::jsonb,
   completed_exam_actions jsonb not null default '[]'::jsonb,
+  discovered_findings jsonb not null default '{}'::jsonb,
+  diagnosis_hypotheses jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
