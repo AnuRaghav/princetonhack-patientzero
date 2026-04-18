@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { patientResponder } from "@/lib/ai/patientResponder";
 import { ChatRequestSchema, ChatResponseSchema } from "@/lib/api/schemas";
-import { loadCaseFromDisk } from "@/lib/cases/loader";
+import { loadCase } from "@/lib/cases/loader";
+import { projectFindings } from "@/lib/sim/findingsProjector";
 import { applyChatReveal } from "@/lib/sim/reducers";
 import { computeNewlyRevealedFacts } from "@/lib/sim/revealRules";
 import { transitionEmotionAfterChat, transitionPainAfterChat } from "@/lib/sim/stateMachine";
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   const session = toSessionRow(sessionRow);
-  const caseDoc = await loadCaseFromDisk(session.case_id);
+  const caseDoc = await loadCase(session.case_id);
 
   const already = new Set(session.revealed_facts);
   const newlyRevealed = computeNewlyRevealedFacts(caseDoc, message, already);
@@ -56,12 +57,24 @@ export async function POST(req: Request) {
     metadata: { emotion: response.emotion, revealedFacts: newlyRevealed },
   });
 
+  const finalEmotion = response.emotion ?? emotion;
+
+  const findings = projectFindings({
+    caseDoc,
+    revealedFacts: mergedFacts,
+    completedExamActions: session.completed_exam_actions,
+    emotionalState: finalEmotion,
+    painLevel: pain,
+    diagnosisHypotheses: session.diagnosis_hypotheses,
+  });
+
   const { error: upErr } = await supabase
     .from("sessions")
     .update({
       revealed_facts: mergedFacts,
-      emotional_state: response.emotion ?? emotion,
+      emotional_state: finalEmotion,
       pain_level: pain,
+      discovered_findings: findings,
     })
     .eq("id", sessionId);
 
@@ -71,8 +84,9 @@ export async function POST(req: Request) {
 
   const body = ChatResponseSchema.parse({
     reply: response.reply,
-    emotion: response.emotion ?? emotion,
+    emotion: finalEmotion,
     revealedFacts: newlyRevealed,
+    findings,
   });
   return NextResponse.json(body);
 }

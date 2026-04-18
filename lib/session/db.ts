@@ -1,29 +1,47 @@
 import type { ExamActionRecord } from "@/types/exam";
+import type { DiagnosisHypothesis, EncounterFindings } from "@/types/findings";
 import type { SessionRow, SessionStatus, TranscriptTurnRow } from "@/types/session";
+
+import { emptyFindings } from "@/lib/sim/findingsProjector";
 
 type SessionDbRow = {
   id: string;
   user_id: string | null;
-  case_id: string;
+  /** Stored as text or bigint in DB — normalize to string for the API. */
+  case_id: string | number;
   status: string;
   emotional_state: string;
   pain_level: number;
   revealed_facts: unknown;
   completed_exam_actions: unknown;
+  discovered_findings?: unknown;
+  diagnosis_hypotheses?: unknown;
   created_at: string;
   updated_at: string;
 };
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 export function toSessionRow(row: SessionDbRow): SessionRow {
+  const findings =
+    isPlainObject(row.discovered_findings) &&
+    Object.keys(row.discovered_findings).length > 0
+      ? (row.discovered_findings as EncounterFindings)
+      : emptyFindings();
+
   return {
     id: row.id,
     user_id: row.user_id,
-    case_id: row.case_id,
+    case_id: row.case_id != null ? String(row.case_id) : "",
     status: row.status as SessionStatus,
     emotional_state: row.emotional_state,
     pain_level: row.pain_level,
     revealed_facts: (row.revealed_facts as string[]) ?? [],
     completed_exam_actions: (row.completed_exam_actions as ExamActionRecord[]) ?? [],
+    discovered_findings: findings,
+    diagnosis_hypotheses: (row.diagnosis_hypotheses as DiagnosisHypothesis[]) ?? [],
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

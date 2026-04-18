@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { ExamRequestSchema, ExamResponseSchema } from "@/lib/api/schemas";
-import { loadCaseFromDisk } from "@/lib/cases/loader";
+import { loadCase } from "@/lib/cases/loader";
+import { projectFindings } from "@/lib/sim/findingsProjector";
 import { applyExamCompletion } from "@/lib/sim/reducers";
 import { runExam, emotionFromExam } from "@/lib/sim/examEngine";
 import { toSessionRow } from "@/lib/session/db";
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   const session = toSessionRow(sessionRow);
-  const caseDoc = await loadCaseFromDisk(session.case_id);
+  const caseDoc = await loadCase(session.case_id);
 
   const result = runExam(caseDoc, action, target, session.completed_exam_actions);
 
@@ -49,12 +50,22 @@ export async function POST(req: Request) {
     },
   });
 
+  const findings = projectFindings({
+    caseDoc,
+    revealedFacts: next.revealed_facts,
+    completedExamActions: next.completed_exam_actions,
+    emotionalState: next.emotional_state,
+    painLevel: next.pain_level,
+    diagnosisHypotheses: next.diagnosis_hypotheses,
+  });
+
   const { error: upErr } = await supabase
     .from("sessions")
     .update({
       completed_exam_actions: next.completed_exam_actions,
       pain_level: next.pain_level,
       emotional_state: next.emotional_state,
+      discovered_findings: findings,
     })
     .eq("id", sessionId);
 
@@ -67,6 +78,7 @@ export async function POST(req: Request) {
     painDelta: result.painDelta,
     audioUrl: result.audioUrl,
     visualCue: result.visualCue,
+    findings,
   });
   return NextResponse.json(body);
 }
