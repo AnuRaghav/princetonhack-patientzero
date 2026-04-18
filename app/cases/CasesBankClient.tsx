@@ -9,11 +9,10 @@ import {
   Badge,
   Button,
   Icon,
-  ProgressBarOnDark,
   Surface,
-  TickBar,
   cn,
 } from "@/components/ui";
+import { SessionHeatmap, type HeatmapBucket } from "@/components/sim/SessionHeatmap";
 
 const PAGE_SIZE = 25;
 
@@ -42,6 +41,15 @@ export function CasesBankClient() {
   const [startingId, setStartingId] = useState<string | null>(null);
   const [randomLoading, setRandomLoading] = useState(false);
 
+  const [activity, setActivity] = useState<{
+    buckets: HeatmapBucket[];
+    total: number;
+    completed: number;
+    uniqueCases: number;
+    streak: number;
+    bestDay: { date: string; count: number };
+  } | null>(null);
+
   useEffect(() => {
     const id = window.setTimeout(() => {
       setQ(qInput);
@@ -50,6 +58,38 @@ export function CasesBankClient() {
     }, 280);
     return () => window.clearTimeout(id);
   }, [qInput]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/sessions/activity");
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          buckets?: HeatmapBucket[];
+          total?: number;
+          completed?: number;
+          uniqueCases?: number;
+          streak?: number;
+          bestDay?: { date: string; count: number };
+        };
+        if (cancelled) return;
+        setActivity({
+          buckets: json.buckets ?? [],
+          total: json.total ?? 0,
+          completed: json.completed ?? 0,
+          uniqueCases: json.uniqueCases ?? 0,
+          streak: json.streak ?? 0,
+          bestDay: json.bestDay ?? { date: "", count: 0 },
+        });
+      } catch {
+        /* non-fatal — heatmap just shows zeros */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -194,22 +234,31 @@ export function CasesBankClient() {
             </div>
           </div>
 
-          <div className="relative grid grid-cols-2 gap-3">
-            <DarkPanel
-              title="Total cases"
-              hint="Catalog size"
-              value={total >= 1000 ? `${(total / 1000).toFixed(1)}k` : String(total)}
-            />
-            <DarkPanel
-              title="Specialties"
-              hint="Heuristic buckets"
-              value={String(CLINICAL_BUCKETS.length)}
-            />
-            <div className="col-span-2 flex flex-col gap-2 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-4">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
-                Catalog readiness
+          <div className="relative flex min-w-0 flex-col gap-4 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
+                  Case-solving activity
+                </div>
+                <div className="mt-1 truncate text-[13px] font-semibold text-white">
+                  Last {Math.max(1, Math.round((activity?.buckets.length ?? 84) / 7))} weeks · {(activity?.total ?? 0).toLocaleString()} sessions
+                </div>
               </div>
-              <TickBar value={Math.min(100, total / 50)} count={48} onDark className="w-full" />
+              <Badge tone="dark" size="xs" dot pulse>
+                live
+              </Badge>
+            </div>
+
+            <SessionHeatmap buckets={activity?.buckets ?? []} />
+
+            <div className="grid grid-cols-4 gap-3 border-t border-white/[0.06] pt-3">
+              <HeroStat label="Started" value={String(activity?.total ?? 0)} />
+              <HeroStat label="Completed" value={String(activity?.completed ?? 0)} />
+              <HeroStat label="Streak" value={`${activity?.streak ?? 0}d`} />
+              <HeroStat
+                label="Catalog"
+                value={total >= 1000 ? `${(total / 1000).toFixed(1)}k` : String(total)}
+              />
             </div>
           </div>
         </div>
@@ -422,15 +471,15 @@ export function CasesBankClient() {
 
 /* ----------------------------------------------------------------- */
 
-function DarkPanel({ title, hint, value }: { title: string; hint: string; value: string }) {
+function HeroStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-4">
-      <div className="text-[12px] font-medium text-white">{title}</div>
-      <div className="text-[11px] leading-snug text-[var(--color-on-dark-muted)]">{hint}</div>
-      <div className="num mt-1 text-[28px] font-bold leading-none text-white">{value}</div>
-      <div className="mt-1">
-        <ProgressBarOnDark value={70} tone="warm" showThumb className="" />
-      </div>
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-[0.16em] text-white/35">
+        {label}
+      </span>
+      <span className="num text-[16px] font-bold leading-none text-white">
+        {value}
+      </span>
     </div>
   );
 }
