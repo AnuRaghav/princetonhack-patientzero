@@ -60,7 +60,6 @@ export default function SimPage() {
   const [lastFinding, setLastFinding] = useState<string | null>(null);
   const [lastTarget, setLastTarget] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
-  const [caseTitle, setCaseTitle] = useState<string | null>(null);
 
   const currentSelection =
     typeof bodyHighlight === "string" && isExamTarget(bodyHighlight)
@@ -81,21 +80,7 @@ export default function SimPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const payload = await refresh();
-        if (payload?.session.case_id) {
-          try {
-            const caseRes = await fetch(`/api/cases/${encodeURIComponent(payload.session.case_id)}`);
-            if (caseRes.ok) {
-              const caseJson = (await caseRes.json()) as {
-                title?: string;
-                chief_complaint?: string;
-              };
-              setCaseTitle(caseJson.title ?? caseJson.chief_complaint ?? null);
-            }
-          } catch {
-            /* non-fatal */
-          }
-        }
+        await refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load session");
       }
@@ -203,15 +188,18 @@ export default function SimPage() {
             </Badge>
             <Badge tone="neutral">
               case · #{data.session.case_id}
-              {caseTitle ? ` · ${caseTitle}` : ""}
             </Badge>
             <span className="num-mono text-[11px] text-[var(--color-ink-faint)]">
               session.{sessionId.slice(0, 8)}
             </span>
           </div>
           <h1 className="text-[26px] font-bold tracking-tight text-[var(--color-ink)] md:text-[32px]">
-            {caseTitle ?? "Clinical encounter"}
+            Clinical encounter
           </h1>
+          <p className="max-w-xl text-[13px] text-[var(--color-ink-muted)]">
+            Take the history, examine the patient, and submit your diagnosis.
+            The disease label is hidden — you decide what this is.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button

@@ -201,7 +201,9 @@ export function TickBar({
       {Array.from({ length: count }).map((_, i) => {
         const t = i / (count - 1);
         const active = t <= pct;
-        const heightPct = 30 + Math.sin((i / count) * Math.PI) * 60;
+        const heightPct = (30 + Math.sin((i / count) * Math.PI) * 60).toFixed(
+          4,
+        );
         let bg: string;
         if (active) {
           if (t < 0.45) bg = "bg-[#ff5d3a]";
