@@ -145,7 +145,10 @@ export default function SimPage() {
         <div>
           <p className="text-xs uppercase tracking-wide text-white/50">Physical exam</p>
           <h2 className="text-xl font-semibold text-white">3D body interface</h2>
-          <p className="text-sm text-white/60">Click a hotspot. RLQ palpation twice demonstrates rebound on the second pass.</p>
+          <p className="text-sm text-white/60">
+            Click core regions or joint hotspots for more precise targeting. RLQ palpation twice demonstrates rebound on
+            the second pass.
+          </p>
         </div>
         <div className="min-h-[460px] flex-1">
           <BodyScene onExam={(intent) => void handleExam(intent)} />
