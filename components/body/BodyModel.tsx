@@ -16,7 +16,7 @@ export function BodyModel() {
     });
   }, [scene]);
 
-  return <primitive object={scene} rotation={[0, Math.PI, 0]} scale={0.03} />;
+  return <primitive object={scene} rotation={[0, Math.PI, 0]} scale={0.02} />;
 }
 
 useGLTF.preload("/models/male_body.glb");

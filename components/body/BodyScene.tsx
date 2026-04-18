@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PresentationControls } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 
 import { useSimUiStore } from "@/lib/store/simUiStore";
 import { BodyLegend } from "./BodyLegend";
@@ -26,29 +26,27 @@ export function BodyScene({ onExam }: Props) {
         <BodyLegend highlight={highlight} />
       </div>
 
-      <Canvas shadows camera={{ position: [0, 1.2, 5], fov: 40 }}>
+      <Canvas camera={{ position: [0, 0.6, 7], fov: 35 }}>
         <color attach="background" args={["#0b1220"]} />
+        <ambientLight intensity={0.4} />
 
-        <ambientLight intensity={0.6} />
+        {/* Key light */}
         <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
 
-        <PresentationControls
-          global={false}
-          cursor
-          snap={false}
-          speed={1.2}
-          polar={[0, 0]} // lock vertical tilt (optional but good)
-          azimuth={[-Math.PI, Math.PI]} // FULL 360
-        >
-          <group position={[0, -1.5, 0]}>
-            <BodyModel />
-          </group>
-        </PresentationControls>
+        {/* Fill light (front) */}
+        <directionalLight position={[0, 2, 5]} intensity={0.6} />
+
+        {/* Rim light (back highlight) */}
+        <directionalLight position={[0, 3, -5]} intensity={0.5} />
+        <group position={[0, -0.5, 0]}>
+          <BodyModel />
+        </group>
 
         <OrbitControls
           enablePan={false}
-          enableRotate={false}
-          enableZoom={false}
+          target={[0, 1.2, 0]}
+          minDistance={5.5}
+          maxDistance={8}
         />
       </Canvas>
     </div>
