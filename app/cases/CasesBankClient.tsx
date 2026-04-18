@@ -1,11 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CLINICAL_BUCKETS } from "@/lib/cases/bucketFilters";
 import type { CaseListItem } from "@/lib/api/casesTypes";
+import {
+  Badge,
+  Button,
+  Icon,
+  ProgressBarOnDark,
+  Surface,
+  TickBar,
+  cn,
+} from "@/components/ui";
 
 const PAGE_SIZE = 25;
 
@@ -32,6 +40,7 @@ export function CasesBankClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [randomLoading, setRandomLoading] = useState(false);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -64,8 +73,10 @@ export function CasesBankClient() {
           error?: string;
         };
         if (!res.ok) {
-          setError(json.error ?? "Failed to load cases");
-          setData(null);
+          if (!cancelled) {
+            setError(json.error ?? "Failed to load cases");
+            setData(null);
+          }
           return;
         }
         if (!cancelled) {
@@ -103,11 +114,11 @@ export function CasesBankClient() {
         body: JSON.stringify({ caseId }),
       });
       const json = (await res.json()) as { sessionId?: string; error?: string };
-      if (!res.ok) {
+      if (!res.ok || !json.sessionId) {
         setError(json.error ?? "Could not start session");
         return;
       }
-      if (json.sessionId) router.push(`/sim/${json.sessionId}`);
+      router.push(`/sim/${json.sessionId}`);
     } catch {
       setError("Network error");
     } finally {
@@ -116,165 +127,239 @@ export function CasesBankClient() {
   };
 
   const randomCase = async () => {
+    setRandomLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/cases/random");
       const json = (await res.json()) as { id?: string; error?: string };
-      if (!res.ok) {
+      if (!res.ok || !json.id) {
         setError(json.error ?? "Random pick failed");
         return;
       }
-      if (json.id) await startCase(json.id);
+      await startCase(json.id);
     } catch {
       setError("Network error");
+    } finally {
+      setRandomLoading(false);
     }
   };
 
-  const solvedHint = useMemo(() => {
-    const t = data?.total ?? 0;
-    return `0 / ${t.toLocaleString()} solved`;
-  }, [data?.total]);
+  const total = data?.total ?? 0;
+  const totalDisplay = useMemo(() => total.toLocaleString(), [total]);
 
   return (
-    <div className="flex min-h-full bg-[#0f1419] text-zinc-100">
-      <aside className="hidden w-52 shrink-0 flex-col border-r border-zinc-800/80 bg-[#0b0e13] py-6 pl-4 pr-2 lg:flex">
-        <div className="mb-6 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Explore</div>
-        <nav className="space-y-1 text-sm">
-          <Link
-            href="/"
-            className="block rounded-lg px-3 py-2 text-zinc-400 transition hover:bg-zinc-800/60 hover:text-zinc-100"
-          >
-            Home
-          </Link>
-          <span className="block rounded-lg bg-zinc-800/80 px-3 py-2 font-medium text-emerald-400/90">
-            Case bank
-          </span>
-        </nav>
-      </aside>
-
-      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10">
-        <header className="mb-6 flex flex-col gap-4 border-b border-zinc-800/80 pb-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Case bank</h1>
-              <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-                Clinical vignettes as graded “problems.” Search the catalog, filter by specialty (heuristic on
-                Disease text), or draw a random case. Select Solve to enter the encounter.
-              </p>
+    <div className="grid gap-3 lg:grid-cols-12">
+      {/* HERO — Case bank header ================================ */}
+      <Surface variant="hero" padding="none" radius="xl" className="lg:col-span-12">
+        <div className="relative grid gap-6 p-7 md:p-8 lg:grid-cols-[1.4fr_1fr]">
+          <div
+            className="pointer-events-none absolute -right-20 top-1/2 h-[300px] w-[300px] -translate-y-1/2 rounded-full opacity-60 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(255,138,61,0.28), rgba(52,210,124,0.16) 50%, transparent 70%)",
+            }}
+            aria-hidden
+          />
+          <div className="relative flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Badge tone="dark" size="xs" dot pulse>
+                Case bank
+              </Badge>
+              <span className="text-[11px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
+                Live · Supabase
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={() => void randomCase()}
-              disabled={!!startingId}
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800/50 px-3 py-2 text-sm font-medium text-zinc-100 shadow-sm transition hover:border-emerald-500/50 hover:bg-zinc-800 disabled:opacity-50"
-              title="Uniform random over all rows"
-            >
-              <ShuffleIcon />
-              Random case
-            </button>
+            <h1 className="text-balance text-[34px] font-bold leading-[1.05] tracking-tight text-white md:text-[42px]">
+              Pick a case.{" "}
+              <span className="grad-warm-text">Run the encounter.</span>
+            </h1>
+            <p className="max-w-xl text-[14px] leading-relaxed text-[var(--color-on-dark-soft)]">
+              Clinical vignettes as graded problems. Search the catalog, filter by
+              specialty, or draw a uniformly random case. Solve to enter the encounter.
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <Button
+                variant="on-dark"
+                size="md"
+                loading={randomLoading}
+                disabled={startingId !== null}
+                onClick={() => void randomCase()}
+                leadingIcon={<Icon.Sparkles size={14} />}
+              >
+                Random case
+              </Button>
+              <span className="num text-[12px] text-[var(--color-on-dark-muted)]">
+                <span className="font-semibold text-white">{totalDisplay}</span> cases indexed
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="relative grid grid-cols-2 gap-3">
+            <DarkPanel
+              title="Total cases"
+              hint="Catalog size"
+              value={total >= 1000 ? `${(total / 1000).toFixed(1)}k` : String(total)}
+            />
+            <DarkPanel
+              title="Specialties"
+              hint="Heuristic buckets"
+              value={String(CLINICAL_BUCKETS.length)}
+            />
+            <div className="col-span-2 flex flex-col gap-2 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-4">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
+                Catalog readiness
+              </div>
+              <TickBar value={Math.min(100, total / 50)} count={48} onDark className="w-full" />
+            </div>
+          </div>
+        </div>
+      </Surface>
+
+      {/* FILTERS + SEARCH ==================================== */}
+      <Surface variant="card" padding="md" radius="lg" className="lg:col-span-12">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative max-w-md flex-1">
+              <Icon.Search
+                size={14}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-faint)]"
+              />
+              <input
+                type="search"
+                placeholder="Search diseases or symptoms…"
+                value={qInput}
+                onChange={(e) => setQInput(e.target.value)}
+                className="h-10 w-full rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface-2)] pl-9 pr-4 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none smooth focus:border-[var(--color-ink)] focus:bg-[var(--color-surface)]"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-[12px] text-[var(--color-ink-muted)]">
+              <span className="num">
+                {loading
+                  ? "Loading…"
+                  : `${(data?.cases.length ?? 0).toLocaleString()} of ${totalDisplay}`}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            <FilterChip
+              active={!bucket}
+              onClick={() => {
+                setBucket("");
+                setPage(1);
+              }}
+            >
+              All
+            </FilterChip>
             {CLINICAL_BUCKETS.map((b) => (
-              <button
+              <FilterChip
                 key={b}
-                type="button"
+                active={bucket === b}
                 onClick={() => {
                   setBucket((prev) => (prev === b ? "" : b));
                   setPage(1);
                 }}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
-                  bucket === b
-                    ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
-                    : "border-zinc-700/80 bg-zinc-900/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                }`}
               >
                 {b}
-              </button>
+              </FilterChip>
             ))}
           </div>
+        </div>
+      </Surface>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-md flex-1">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="search"
-                placeholder="Search diseases and symptoms…"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 py-2 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 outline-none ring-emerald-500/30 focus:ring-2"
-              />
-            </div>
-            <div className="flex items-center gap-3 text-sm text-zinc-500">
-              <span className="tabular-nums text-zinc-400">{solvedHint}</span>
-              <span
-                className="hidden h-10 w-10 rounded-full border border-zinc-700 sm:flex sm:items-center sm:justify-center"
-                aria-hidden
-              >
-                <span className="text-xs text-zinc-500">0%</span>
-              </span>
-            </div>
-          </div>
-        </header>
-
+      {/* RESULTS ============================================ */}
+      <Surface variant="card" padding="none" radius="lg" className="lg:col-span-12">
         {error ? (
-          <div className="mb-4 rounded-lg border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-100">{error}</div>
+          <div className="border-b border-[var(--color-line)] bg-[var(--color-danger-soft)] px-5 py-3 text-[13px] text-[var(--color-danger)]">
+            {error}
+          </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-xl border border-zinc-800/90 bg-[#121826] shadow-xl shadow-black/30">
-          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
             <thead>
-              <tr className="border-b border-zinc-800/90 bg-zinc-900/40 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Topic</th>
-                <th className="px-4 py-3 text-right">Symptoms</th>
-                <th className="px-4 py-3">Difficulty</th>
-                <th className="px-4 py-3 text-right">Action</th>
+              <tr className="border-b border-[var(--color-line)] text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+                <th className="px-5 py-3 font-semibold">#</th>
+                <th className="px-5 py-3 font-semibold">Case</th>
+                <th className="px-5 py-3 font-semibold">Specialty</th>
+                <th className="px-5 py-3 text-right font-semibold">Symptoms</th>
+                <th className="px-5 py-3 font-semibold">Difficulty</th>
+                <th className="px-5 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
-                    Loading cases…
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[var(--color-line)]">
+                    <td className="px-5 py-4">
+                      <div className="h-3 w-8 rounded bg-[var(--color-surface-3)]" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-3 w-48 rounded bg-[var(--color-surface-3)]" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-3 w-24 rounded bg-[var(--color-surface-3)]" />
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="ml-auto h-3 w-6 rounded bg-[var(--color-surface-3)]" />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="h-5 w-14 rounded-full bg-[var(--color-surface-3)]" />
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="ml-auto h-7 w-16 rounded-full bg-[var(--color-surface-3)]" />
+                    </td>
+                  </tr>
+                ))
               ) : !data?.cases.length ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
+                  <td
+                    colSpan={6}
+                    className="px-5 py-16 text-center text-[13px] text-[var(--color-ink-muted)]"
+                  >
                     No cases match your filters.
                   </td>
                 </tr>
               ) : (
-                data.cases.map((row, i) => (
+                data.cases.map((row) => (
                   <tr
                     key={row.id}
-                    className={`border-b border-zinc-800/50 transition hover:bg-zinc-800/30 ${
-                      i % 2 === 0 ? "bg-[#121826]" : "bg-[#0f131c]"
-                    }`}
+                    className="group border-b border-[var(--color-line)] smooth hover:bg-[var(--color-surface-2)]"
                   >
-                    <td className="px-4 py-3 text-zinc-600">—</td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-zinc-500">{row.id}.</span>{" "}
-                      <span className="font-medium text-zinc-100">{row.title}</span>
+                    <td className="px-5 py-3.5 num-mono text-[11px] text-[var(--color-ink-faint)]">
+                      {row.id}
                     </td>
-                    <td className="max-w-[200px] truncate px-4 py-3 text-xs text-zinc-400" title={row.bucket}>
-                      {row.bucket}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-zinc-400">{row.symptomCount}</td>
-                    <td className="px-4 py-3">
-                      <DifficultyPill d={row.difficulty} />
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-5 py-3.5">
                       <button
                         type="button"
                         onClick={() => void startCase(row.id)}
-                        disabled={startingId !== null}
-                        className="rounded-md bg-emerald-600/90 px-3 py-1.5 text-xs font-semibold text-emerald-950 transition hover:bg-emerald-500 disabled:opacity-50"
+                        className="text-left text-[13.5px] font-semibold text-[var(--color-ink)] hover:underline"
                       >
-                        {startingId === row.id ? "…" : "Solve"}
+                        {row.title}
                       </button>
+                    </td>
+                    <td
+                      className="max-w-[220px] truncate px-5 py-3.5 text-[12px] text-[var(--color-ink-muted)]"
+                      title={row.bucket}
+                    >
+                      {row.bucket}
+                    </td>
+                    <td className="px-5 py-3.5 text-right num text-[12px] text-[var(--color-ink-soft)]">
+                      {row.symptomCount}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <DifficultyBadge d={row.difficulty} />
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <Button
+                        size="sm"
+                        loading={startingId === row.id}
+                        disabled={startingId !== null || randomLoading}
+                        onClick={() => void startCase(row.id)}
+                        trailingIcon={<Icon.ArrowUpRight size={12} />}
+                      >
+                        Solve
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -284,86 +369,126 @@ export function CasesBankClient() {
         </div>
 
         {data && data.totalPages > 1 ? (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <span className="text-sm text-zinc-500">
-              Page {data.page} / {data.totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= data.totalPages || loading}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
-            >
-              Next
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] px-5 py-4">
+            <div className="text-[12px] text-[var(--color-ink-muted)]">
+              Page <span className="num font-medium text-[var(--color-ink)]">{data.page}</span> of{" "}
+              <span className="num font-medium text-[var(--color-ink)]">{data.totalPages}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page >= data.totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         ) : null}
-      </main>
+      </Surface>
 
-      <aside className="hidden w-72 shrink-0 border-l border-zinc-800/80 bg-[#0b0e13] py-6 pl-3 pr-4 xl:block">
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Daily streak</h2>
-          <p className="mt-2 text-sm text-zinc-400">Track completed encounters here soon.</p>
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] text-zinc-600">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded border border-zinc-800 bg-zinc-900/50" />
-            ))}
-          </div>
+      {/* FOOTER NOTES ========================================= */}
+      <Surface variant="muted" padding="md" radius="lg" className="lg:col-span-12">
+        <div className="grid gap-3 md:grid-cols-3">
+          <FootNote
+            icon={<Icon.Sparkles size={12} />}
+            label="Random"
+            body="Uniform pick across the full Supabase row count."
+          />
+          <FootNote
+            icon={<Icon.Layers size={12} />}
+            label="Specialties"
+            body="Keyword heuristic on Disease + symptom columns."
+          />
+          <FootNote
+            icon={<Icon.Activity size={12} />}
+            label="Difficulty"
+            body="Derived from how many symptom slots are filled (Easy / Med / Hard)."
+          />
         </div>
-        <div className="mt-4 rounded-xl border border-zinc-800/80 bg-zinc-900/30 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Notes</h2>
-          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-zinc-400">
-            <li>Random is uniform across your Supabase case count.</li>
-            <li>Topic tags are keyword heuristics (Disease + symptoms).</li>
-            <li>
-              Difficulty is derived from how many symptom columns are filled (Easy / Med / Hard).
-            </li>
-          </ul>
-        </div>
-      </aside>
+      </Surface>
     </div>
   );
 }
 
-function DifficultyPill({ d }: { d: CaseListItem["difficulty"] }) {
-  const cls =
-    d === "Easy"
-      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
-      : d === "Medium"
-        ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-        : "border-rose-500/50 bg-rose-500/10 text-rose-200";
+/* ----------------------------------------------------------------- */
+
+function DarkPanel({ title, hint, value }: { title: string; hint: string; value: string }) {
   return (
-    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-4">
+      <div className="text-[12px] font-medium text-white">{title}</div>
+      <div className="text-[11px] leading-snug text-[var(--color-on-dark-muted)]">{hint}</div>
+      <div className="num mt-1 text-[28px] font-bold leading-none text-white">{value}</div>
+      <div className="mt-1">
+        <ProgressBarOnDark value={70} tone="warm" showThumb className="" />
+      </div>
+    </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-medium smooth",
+        active
+          ? "border-transparent bg-[var(--color-ink)] text-white"
+          : "border-[var(--color-line-strong)] bg-[var(--color-surface)] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function DifficultyBadge({ d }: { d: CaseListItem["difficulty"] }) {
+  const tone = d === "Easy" ? "accent" : d === "Medium" ? "warn" : "danger";
+  return (
+    <Badge tone={tone} size="xs" dot>
       {d === "Medium" ? "Med." : d}
-    </span>
+    </Badge>
   );
 }
 
-function ShuffleIcon() {
+function FootNote({
+  icon,
+  label,
+  body,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  body: string;
+}) {
   return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path
-        d="M3 7h3.5a5 5 0 013.89 1.84l6.22 8.32A5 5 0 0019.5 19H21M3 17h3.5a5 5 0 003.89-1.84l6.22-8.32A5 5 0 0119.5 5H21M21 7v2M21 5h-2M3 17v2M3 15h2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <circle cx="11" cy="11" r="7" />
-      <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
-    </svg>
+    <div className="flex gap-3">
+      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface)] text-[var(--color-ink-soft)]">
+        {icon}
+      </span>
+      <div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink)]">
+          {label}
+        </div>
+        <div className="mt-0.5 text-[12px] leading-relaxed text-[var(--color-ink-muted)]">{body}</div>
+      </div>
+    </div>
   );
 }

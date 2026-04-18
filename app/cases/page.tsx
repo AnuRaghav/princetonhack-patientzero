@@ -6,7 +6,7 @@ export default function CasesPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[60vh] items-center justify-center bg-[#0f1419] text-zinc-500">
+        <div className="flex min-h-[60vh] items-center justify-center text-[var(--color-ink-muted)]">
           Loading case bank…
         </div>
       }

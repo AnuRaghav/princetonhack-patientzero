@@ -18,9 +18,9 @@ type NavItem = {
 
 const NAV: ReadonlyArray<NavItem> = [
   { label: "Console", href: "/", icon: <Icon.Layers size={14} />, matchPrefix: "/" },
+  { label: "Cases", href: "/cases", icon: <Icon.Clipboard size={14} />, matchPrefix: "/cases" },
   { label: "Encounter", href: "/sim", icon: <Icon.Stethoscope size={14} />, matchPrefix: "/sim" },
   { label: "Debrief", href: "/debrief", icon: <Icon.Pulse size={14} />, matchPrefix: "/debrief" },
-  { label: "Library", href: "/library", icon: <Icon.Layers size={14} />, matchPrefix: "/library" },
 ];
 
 type Props = {

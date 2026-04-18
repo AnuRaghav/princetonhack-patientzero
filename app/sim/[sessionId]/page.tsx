@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { ExamIntent } from "@/components/body/BodyScene";
 import { ChatPanel } from "@/components/sim/ChatPanel";
+import { DiagnosisPanel } from "@/components/sim/DiagnosisPanel";
+import { FindingsPanel } from "@/components/sim/FindingsPanel";
 import { PatientStatusCard } from "@/components/sim/PatientStatusCard";
 import { TranscriptPanel } from "@/components/sim/TranscriptPanel";
 import {
@@ -17,6 +19,7 @@ import {
   cn,
 } from "@/components/ui";
 import { useSimUiStore } from "@/lib/store/simUiStore";
+import type { DiagnosisHypothesis, EncounterFindings } from "@/types/findings";
 import type { SessionRow, TranscriptTurnRow } from "@/types/session";
 
 const BodyScene = dynamic(
@@ -50,6 +53,7 @@ export default function SimPage() {
   const [lastFinding, setLastFinding] = useState<string | null>(null);
   const [lastTarget, setLastTarget] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [caseTitle, setCaseTitle] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/sessions/${sessionId}`);
@@ -59,17 +63,50 @@ export default function SimPage() {
     }
     const payload = (await res.json()) as SessionPayload;
     setData(payload);
+    return payload;
   }, [sessionId]);
 
   useEffect(() => {
     void (async () => {
       try {
-        await refresh();
+        const payload = await refresh();
+        if (payload?.session.case_id) {
+          try {
+            const caseRes = await fetch(`/api/cases/${encodeURIComponent(payload.session.case_id)}`);
+            if (caseRes.ok) {
+              const caseJson = (await caseRes.json()) as {
+                title?: string;
+                chief_complaint?: string;
+              };
+              setCaseTitle(caseJson.title ?? caseJson.chief_complaint ?? null);
+            }
+          } catch {
+            /* non-fatal */
+          }
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load session");
       }
     })();
   }, [refresh]);
+
+  const handleDiagnosisSubmitted = (next: {
+    diagnosisHypotheses: DiagnosisHypothesis[];
+    findings: EncounterFindings;
+  }) => {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            session: {
+              ...prev.session,
+              diagnosis_hypotheses: next.diagnosisHypotheses,
+              discovered_findings: next.findings,
+            },
+          }
+        : prev,
+    );
+  };
 
   const handleSend = async (message: string) => {
     setBanner(null);
@@ -148,23 +185,26 @@ export default function SimPage() {
       {/* SESSION HEADER ============================================ */}
       <div className="flex flex-col gap-3 px-1 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="accent" dot pulse>
               Live encounter
             </Badge>
-            <Badge tone="neutral">case · appendicitis</Badge>
+            <Badge tone="neutral">
+              case · #{data.session.case_id}
+              {caseTitle ? ` · ${caseTitle}` : ""}
+            </Badge>
             <span className="num-mono text-[11px] text-[var(--color-ink-faint)]">
               session.{sessionId.slice(0, 8)}
             </span>
           </div>
           <h1 className="text-[26px] font-bold tracking-tight text-[var(--color-ink)] md:text-[32px]">
-            Clinical encounter
+            {caseTitle ?? "Clinical encounter"}
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/cases")}
             leadingIcon={<Icon.X size={14} />}
           >
             Abort
@@ -267,6 +307,18 @@ export default function SimPage() {
               </div>
             )}
           </Surface>
+        </div>
+
+        {/* BOTTOM — Findings + Diagnosis ============================ */}
+        <div className="lg:col-span-7">
+          <FindingsPanel findings={data.session.discovered_findings} />
+        </div>
+        <div className="lg:col-span-5">
+          <DiagnosisPanel
+            sessionId={sessionId}
+            hypotheses={data.session.diagnosis_hypotheses ?? []}
+            onSubmitted={handleDiagnosisSubmitted}
+          />
         </div>
       </div>
     </div>
