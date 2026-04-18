@@ -103,21 +103,25 @@ export function BodyScene({ onExam }: Props) {
 
     return {
       head: { position: at(0.5, 1.05, 0.58), radius: sizeY * 0.06 },
-      chest: { position: at(0.5, 0.68, 0.84), radius: sizeY * 0.075 },
+      chest: { position: at(0.5, 0.88, 0.58), radius: sizeY * 0.075 },
       stomach: { position: at(0.5, 0.75, 0.45), radius: sizeY * 0.072 },
 
       armsLeft: { position: at(0.25, 0.85, 0.64), radius: sizeY * 0.058 },
       armsRight: { position: at(0.75, 0.85, 0.64), radius: sizeY * 0.058 },
-      
+
       legsLeft: { position: at(0.38, 0.5, 0.6), radius: sizeY * 0.062 },
       legsRight: { position: at(0.62, 0.5, 0.6), radius: sizeY * 0.062 },
 
-      jointsShoulderLeft: { position: atFront(0.34, 0.73), radius: sizeY * 0.04 },
-      jointsShoulderRight: { position: atFront(0.66, 0.73), radius: sizeY * 0.04 },
+      jointsShoulderLeft: {
+        position: atFront(0.34, 0.73),
+        radius: sizeY * 0.04,
+      },
+      jointsShoulderRight: {
+        position: atFront(0.66, 0.73),
+        radius: sizeY * 0.04,
+      },
       jointsKneeLeft: { position: atFront(0.45, 0.3), radius: sizeY * 0.04 },
       jointsKneeRight: { position: atFront(0.55, 0.3), radius: sizeY * 0.04 },
-
-      rlq: { position: at(0.43, 0.4, 0.88), radius: sizeY * 0.055 },
     };
   }, [bounds]);
 
@@ -226,14 +230,6 @@ export function BodyScene({ onExam }: Props) {
                 color="#f59e0b"
                 onSelect={handleSelect}
                 selected={highlight === "joints"}
-              />
-              <BodyHotspot
-                id="rlq"
-                position={hotspotLayout.rlq.position}
-                radius={hotspotLayout.rlq.radius}
-                color="#38bdf8"
-                onSelect={handleSelect}
-                selected={highlight === "rlq"}
               />
             </>
           ) : null}
