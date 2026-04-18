@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 
 import { AppShell } from "@/components/ui";
@@ -23,6 +23,11 @@ export const metadata: Metadata = {
     "A premium clinical simulation console for medical education. Deterministic case engine, 3D physical exam, scored debrief.",
 };
 
+export const viewport: Viewport = {
+  themeColor: "#e7e8eb",
+  colorScheme: "light",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -30,8 +35,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${sans.variable} ${mono.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
-      <body className="min-h-full">
+      <head>
+        <meta name="color-scheme" content="light" />
+      </head>
+      <body className="min-h-full bg-[#e7e8eb] text-[#0e0f12]">
         <AppShell>{children}</AppShell>
       </body>
     </html>
