@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* =========================================================================
+   DESIGN TOKENS — "BioSync" inspired
+   Light page chrome holding a single white app shell, with dark hero panels
+   for marquee content. Constrained palette: monochrome + green + orange.
+   ========================================================================= */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Page chrome */
+  --color-page: #e7e8eb;
+  --color-app: #ffffff;
+
+  /* Light surfaces */
+  --color-surface: #ffffff;
+  --color-surface-2: #fafafb;
+  --color-surface-3: #f3f4f6;
+
+  /* Lines on light */
+  --color-line: rgba(15, 17, 22, 0.06);
+  --color-line-strong: rgba(15, 17, 22, 0.10);
+
+  /* Text on light */
+  --color-ink: #0e0f12;
+  --color-ink-soft: #43464d;
+  --color-ink-muted: #71747c;
+  --color-ink-faint: #a1a4ab;
+
+  /* Dark hero surfaces */
+  --color-dark: #0a0b0d;
+  --color-dark-2: #131418;
+  --color-dark-3: #1c1e23;
+  --color-dark-line: rgba(255, 255, 255, 0.08);
+  --color-dark-line-strong: rgba(255, 255, 255, 0.14);
+  --color-on-dark: #ffffff;
+  --color-on-dark-soft: rgba(255, 255, 255, 0.66);
+  --color-on-dark-muted: rgba(255, 255, 255, 0.44);
+  --color-on-dark-faint: rgba(255, 255, 255, 0.28);
+
+  /* Accents */
+  --color-accent: #34d27c;
+  --color-accent-strong: #16a34a;
+  --color-accent-soft: rgba(52, 210, 124, 0.12);
+  --color-warn: #ff8a3d;
+  --color-warn-strong: #ea580c;
+  --color-warn-soft: rgba(255, 138, 61, 0.12);
+  --color-danger: #ef4444;
+  --color-danger-soft: rgba(239, 68, 68, 0.10);
+  --color-info: #3b82f6;
+  --color-info-soft: rgba(59, 130, 246, 0.10);
+  --color-brand: #e63946;
+
+  /* Radii */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+
+  /* Shadows */
+  --shadow-app: 0 1px 2px rgba(15, 17, 22, 0.04), 0 24px 48px -24px rgba(15, 17, 22, 0.10);
+  --shadow-card: 0 1px 0 rgba(15, 17, 22, 0.02), 0 2px 6px -2px rgba(15, 17, 22, 0.05);
+  --shadow-card-lg: 0 1px 0 rgba(15, 17, 22, 0.02), 0 8px 24px -12px rgba(15, 17, 22, 0.10);
+  --shadow-hero: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.5);
+  --shadow-pop: 0 8px 24px -8px rgba(15, 17, 22, 0.18);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================================================
+   BASE
+   ========================================================================= */
+html,
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  letter-spacing: -0.005em;
+}
+
+::selection {
+  background: rgba(52, 210, 124, 0.28);
+  color: #0a0b0d;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 17, 22, 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(15, 17, 22, 0.10);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 17, 22, 0.20);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.on-dark *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.on-dark *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-app), 0 0 0 4px var(--color-ink);
+  border-radius: 10px;
+}
+.on-dark :focus-visible {
+  box-shadow: 0 0 0 2px var(--color-dark), 0 0 0 4px var(--color-on-dark);
+}
+
+/* =========================================================================
+   UTILITIES
+   ========================================================================= */
+@layer utilities {
+  .num-mono {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+  .grad-warm {
+    background: linear-gradient(90deg, #ff5d3a 0%, #ffb04a 35%, #ffd84a 60%, #34d27c 100%);
+  }
+  .grad-warm-text {
+    background: linear-gradient(90deg, #ff5d3a, #ffb04a, #34d27c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .tick-grid {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.08) 0,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+  }
+  .dot-bg {
+    background-image: radial-gradient(rgba(15, 17, 22, 0.06) 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+  .on-dark .dot-bg {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  }
+  .smooth {
+    transition: background-color 200ms ease, color 200ms ease,
+      border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease,
+      filter 200ms ease;
+  }
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.35;
+    animation: pulse 2s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.6); opacity: 0.55; }
+    80% { transform: scale(1.7); opacity: 0; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
 }

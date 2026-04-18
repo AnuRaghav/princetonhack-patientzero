@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { DebriefCard } from "@/components/sim/DebriefCard";
+import { Badge, Button, Icon, Surface } from "@/components/ui";
 
 type ScorePayload = {
   checklistScore: number;
@@ -17,6 +18,7 @@ type ScorePayload = {
 
 export default function DebriefPage() {
   const params = useParams<{ sessionId: string }>();
+  const router = useRouter();
   const sessionId = params.sessionId;
   const [score, setScore] = useState<ScorePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,33 +57,60 @@ export default function DebriefPage() {
 
   if (error) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16 text-white">
-        <p className="text-rose-300">{error}</p>
-        <Link href="/" className="mt-4 inline-block text-sky-300 hover:underline">
-          Back home
+      <Surface variant="card" padding="lg" radius="lg" className="mx-auto mt-10 max-w-2xl">
+        <div className="text-[var(--color-danger)]">{error}</div>
+        <Link
+          href="/"
+          className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-[var(--color-ink)] hover:underline"
+        >
+          ← Back to console
         </Link>
-      </main>
+      </Surface>
     );
   }
 
   if (!score) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16 text-white/80">
-        <p>Generating debrief…</p>
-      </main>
+      <div className="mt-10 flex items-center gap-3 text-[13px] text-[var(--color-ink-muted)]">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-line-strong)] border-t-[var(--color-ink)]" />
+        Generating debrief…
+      </div>
     );
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <Link href="/" className="text-sm font-semibold text-sky-300 hover:underline">
-          New session
-        </Link>
-        <Link href={`/sim/${sessionId}`} className="text-sm text-white/60 hover:text-white">
-          View encounter (read-only state)
-        </Link>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 px-1 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Badge tone="info" dot>
+              Debrief
+            </Badge>
+            <span className="num-mono text-[11px] text-[var(--color-ink-faint)]">
+              session.{sessionId.slice(0, 8)}
+            </span>
+          </div>
+          <h1 className="text-[26px] font-bold tracking-tight text-[var(--color-ink)] md:text-[32px]">
+            Performance dossier
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => router.push(`/sim/${sessionId}`)}
+            leadingIcon={<Icon.Stethoscope size={14} />}
+          >
+            Replay encounter
+          </Button>
+          <Button
+            onClick={() => router.push("/")}
+            trailingIcon={<Icon.ArrowRight size={14} />}
+          >
+            New session
+          </Button>
+        </div>
       </div>
+
       <DebriefCard
         checklistScore={score.checklistScore}
         empathyScore={score.empathyScore}
@@ -90,6 +119,6 @@ export default function DebriefPage() {
         misses={score.misses}
         strengths={score.strengths}
       />
-    </main>
+    </div>
   );
 }
