@@ -4,12 +4,14 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { BodyLegend } from "@/components/body/BodyLegend";
 
 import type { ExamIntent } from "@/components/body/BodyScene";
 import { ChatPanel } from "@/components/sim/ChatPanel";
 import { PatientStatusCard } from "@/components/sim/PatientStatusCard";
 import { TranscriptPanel } from "@/components/sim/TranscriptPanel";
 import { useSimUiStore } from "@/lib/store/simUiStore";
+import type { ExamAction, ExamTarget } from "@/types/exam";
 import type { SessionRow, TranscriptTurnRow } from "@/types/session";
 
 const BodyScene = dynamic(
@@ -21,6 +23,52 @@ type SessionPayload = {
   session: SessionRow;
   transcript: TranscriptTurnRow[];
 };
+const SELECTION_INFO: Record<ExamTarget, { label: string; action: ExamAction; detail: string }> = {
+  head: {
+    label: "Head / general appearance",
+    action: "inspect",
+    detail: "General appearance and mental status inspection.",
+  },
+  chest: {
+    label: "Chest / lungs",
+    action: "auscultate",
+    detail: "Lung and chest auscultation.",
+  },
+  abdomen: {
+    label: "Abdomen",
+    action: "palpate",
+    detail: "General abdominal palpation.",
+  },
+  stomach: {
+    label: "Stomach / abdomen",
+    action: "palpate",
+    detail: "Abdominal palpation for tenderness and guarding.",
+  },
+  rlq: {
+    label: "Right lower quadrant",
+    action: "palpate",
+    detail: "Focused RLQ palpation for appendiceal signs.",
+  },
+  arms: {
+    label: "Arms",
+    action: "inspect",
+    detail: "Upper extremity inspection for asymmetry and discomfort cues.",
+  },
+  legs: {
+    label: "Legs",
+    action: "inspect",
+    detail: "Lower extremity inspection for posture and guarding.",
+  },
+  joints: {
+    label: "Joints",
+    action: "palpate",
+    detail: "Joint-focused palpation for focal tenderness.",
+  },
+};
+
+function isExamTarget(value: string): value is ExamTarget {
+  return value in SELECTION_INFO;
+}
 
 export default function SimPage() {
   const params = useParams<{ sessionId: string }>();
@@ -30,8 +78,10 @@ export default function SimPage() {
   const [data, setData] = useState<SessionPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
-  const [lastFinding, setLastFinding] = useState<string | null>(null);
+  const bodyHighlight = useSimUiStore((s) => s.bodyHighlight);
   const [banner, setBanner] = useState<string | null>(null);
+  const currentSelection =
+    typeof bodyHighlight === "string" && isExamTarget(bodyHighlight) ? SELECTION_INFO[bodyHighlight] : null;
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/sessions/${sessionId}`);
@@ -91,7 +141,6 @@ export default function SimPage() {
       if (!res.ok) {
         throw new Error(body.error ?? "Exam failed");
       }
-      setLastFinding(body.finding ?? null);
       setBodyHighlight(body.visualCue?.highlight ?? intent.target);
       await refresh();
     } catch (e) {
@@ -141,24 +190,41 @@ export default function SimPage() {
         <TranscriptPanel turns={data.transcript} />
         <ChatPanel onSend={handleSend} />
       </section>
-      <section className="flex flex-1 flex-col gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-white/50">Physical exam</p>
-          <h2 className="text-xl font-semibold text-white">3D body interface</h2>
-          <p className="text-sm text-white/60">
-            Click core regions or joint hotspots for more precise targeting. RLQ palpation twice demonstrates rebound on
-            the second pass.
+      <section className="flex flex-1 flex-col gap-4">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-200/70">Physical exam</p>
+          <h2 className="mt-1 text-xl font-semibold text-white">3D body interface</h2>
+          <p className="mt-2 text-sm leading-relaxed text-white/65">
+            Select a body region to run a focused exam action. RLQ palpation remains available and can still show
+            rebound tenderness on repeat checks.
           </p>
         </div>
-        <div className="min-h-[460px] flex-1">
-          <BodyScene onExam={(intent) => void handleExam(intent)} />
-        </div>
-        {lastFinding ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/90 backdrop-blur">
-            <div className="text-xs uppercase tracking-wide text-white/50">Last finding</div>
-            <p className="mt-2">{lastFinding}</p>
+        <div className="grid min-h-[500px] flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="min-h-[500px]">
+            <BodyScene onExam={(intent) => void handleExam(intent)} />
           </div>
-        ) : null}
+          <div className="self-start space-y-4">
+            <BodyLegend highlight={bodyHighlight} />
+            <div className="rounded-2xl border border-white/10 bg-slate-950/65 p-4 text-sm text-white/90 backdrop-blur">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-200/70">
+                Current selection
+              </div>
+              {currentSelection ? (
+                <>
+                  <div className="mt-2 text-lg font-semibold text-sky-300">{currentSelection.label}</div>
+                  <div className="mt-1 uppercase tracking-[0.14em] text-white/55">
+                    Exam action: {currentSelection.action}
+                  </div>
+                  <p className="mt-2 leading-relaxed text-white/75">{currentSelection.detail}</p>
+                </>
+              ) : (
+                <p className="mt-2 leading-relaxed text-white/70">
+                  Select a highlighted region on the body to run an exam action.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   );

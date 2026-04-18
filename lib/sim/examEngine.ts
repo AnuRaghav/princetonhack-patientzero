@@ -54,7 +54,7 @@ export function runExam(
     };
   }
 
-  if (action === "palpate" && target === "abdomen") {
+  if (action === "palpate" && (target === "abdomen" || target === "stomach")) {
     const entry = findByKey(caseDoc, "palpate_abdomen_general");
     if (!entry) throw new Error("Case missing palpate_abdomen_general finding");
     return {
@@ -62,7 +62,9 @@ export function runExam(
       finding: entry.student_finding,
       painDelta: entry.pain_delta ?? 0,
       audioUrl: null,
-      visualCue: entry.visual ?? null,
+      visualCue: entry.visual
+        ? { ...entry.visual, highlight: target }
+        : null,
     };
   }
 

@@ -30,7 +30,7 @@ export const ChatResponseSchema = z.object({
 export const ExamRequestSchema = z.object({
   sessionId: z.string().uuid(),
   action: z.enum(["palpate", "auscultate", "inspect"]),
-  target: z.enum(["head", "chest", "abdomen", "rlq"]),
+  target: z.enum(["head", "chest", "abdomen", "stomach", "rlq", "arms", "legs", "joints"]),
 });
 export const ExamResponseSchema = z.object({
   finding: z.string(),

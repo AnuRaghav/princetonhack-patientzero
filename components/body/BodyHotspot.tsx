@@ -23,8 +23,12 @@ export function BodyHotspot({
   onSelect,
 }: Props) {
   const [hovered, setHovered] = useState(false);
-  const emissive = useMemo(() => (selected ? "#0ea5e9" : "#000000"), [selected]);
-  const opacity = selected ? 0.22 : hovered ? 0.12 : 0.025;
+  const emissive = useMemo(
+    () => (selected || hovered ? color : "#000000"),
+    [color, hovered, selected],
+  );
+  const opacity = selected ? 0.48 : hovered ? 0.2 : 0.09;
+  const scale = selected ? 1.16 : hovered ? 1.06 : 1;
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -34,6 +38,7 @@ export function BodyHotspot({
   return (
     <mesh
       position={position}
+      scale={[scale, scale, scale]}
       onClick={handleClick}
       onPointerOver={(e) => {
         e.stopPropagation();
@@ -51,7 +56,7 @@ export function BodyHotspot({
         transparent
         opacity={opacity}
         emissive={emissive}
-        emissiveIntensity={selected ? 0.26 : hovered ? 0.08 : 0}
+        emissiveIntensity={selected ? 0.75 : hovered ? 0.24 : 0.04}
         depthWrite={false}
       />
     </mesh>
