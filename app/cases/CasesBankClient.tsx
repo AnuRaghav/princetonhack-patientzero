@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CLINICAL_BUCKETS } from "@/lib/cases/bucketFilters";
 import type { CaseListItem } from "@/lib/api/casesTypes";
 import {
   Badge,
@@ -12,7 +11,6 @@ import {
   ProgressBarOnDark,
   Surface,
   TickBar,
-  cn,
 } from "@/components/ui";
 
 const PAGE_SIZE = 25;
@@ -22,12 +20,10 @@ export function CasesBankClient() {
   const searchParams = useSearchParams();
 
   const initialQ = searchParams.get("q") ?? "";
-  const initialBucket = searchParams.get("bucket") ?? "";
   const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") || "1", 10) || 1);
 
   const [qInput, setQInput] = useState(initialQ);
   const [q, setQ] = useState(initialQ);
-  const [bucket, setBucket] = useState(initialBucket);
   const [page, setPage] = useState(initialPage);
   const qDebounceIsFirst = useRef(true);
 
@@ -62,7 +58,7 @@ export function CasesBankClient() {
           limit: String(PAGE_SIZE),
         });
         if (q.trim()) params.set("q", q.trim());
-        if (bucket && bucket !== "General medicine") params.set("bucket", bucket);
+        // bucket filter removed for Synthea-backed patients
 
         const res = await fetch(`/api/cases?${params.toString()}`);
         const json = (await res.json()) as {
@@ -88,7 +84,7 @@ export function CasesBankClient() {
           });
           const next = new URLSearchParams();
           if (q.trim()) next.set("q", q.trim());
-          if (bucket && bucket !== "General medicine") next.set("bucket", bucket);
+        // bucket filter removed for Synthea-backed patients
           if (page > 1) next.set("page", String(page));
           const qs = next.toString();
           router.replace(`/cases${qs ? `?${qs}` : ""}`, { scroll: false });
@@ -102,7 +98,7 @@ export function CasesBankClient() {
     return () => {
       cancelled = true;
     };
-  }, [q, bucket, page, router]);
+  }, [q, page, router]);
 
   const startCase = async (caseId: string) => {
     setStartingId(caseId);
@@ -200,11 +196,7 @@ export function CasesBankClient() {
               hint="Catalog size"
               value={total >= 1000 ? `${(total / 1000).toFixed(1)}k` : String(total)}
             />
-            <DarkPanel
-              title="Specialties"
-              hint="Heuristic buckets"
-              value={String(CLINICAL_BUCKETS.length)}
-            />
+            <DarkPanel title="Schema" hint="Synthea import" value="3 tables" />
             <div className="col-span-2 flex flex-col gap-2 rounded-[var(--radius-md)] border border-white/[0.06] bg-white/[0.03] p-4">
               <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
                 Catalog readiness
@@ -226,7 +218,7 @@ export function CasesBankClient() {
               />
               <input
                 type="search"
-                placeholder="Search diseases or symptoms…"
+                placeholder="Search patients by name or Id…"
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
                 className="h-10 w-full rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface-2)] pl-9 pr-4 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none smooth focus:border-[var(--color-ink)] focus:bg-[var(--color-surface)]"
@@ -241,28 +233,8 @@ export function CasesBankClient() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            <FilterChip
-              active={!bucket}
-              onClick={() => {
-                setBucket("");
-                setPage(1);
-              }}
-            >
-              All
-            </FilterChip>
-            {CLINICAL_BUCKETS.map((b) => (
-              <FilterChip
-                key={b}
-                active={bucket === b}
-                onClick={() => {
-                  setBucket((prev) => (prev === b ? "" : b));
-                  setPage(1);
-                }}
-              >
-                {b}
-              </FilterChip>
-            ))}
+          <div className="text-[12px] text-[var(--color-ink-muted)]">
+            Patients imported from Synthea (`patients`, `conditions`, `observations`).
           </div>
         </div>
       </Surface>
@@ -280,10 +252,9 @@ export function CasesBankClient() {
             <thead>
               <tr className="border-b border-[var(--color-line)] text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
                 <th className="px-5 py-3 font-semibold">#</th>
-                <th className="px-5 py-3 font-semibold">Case</th>
-                <th className="px-5 py-3 font-semibold">Specialty</th>
-                <th className="px-5 py-3 text-right font-semibold">Symptoms</th>
-                <th className="px-5 py-3 font-semibold">Difficulty</th>
+                <th className="px-5 py-3 font-semibold">Patient</th>
+                <th className="px-5 py-3 font-semibold">Gender</th>
+                <th className="px-5 py-3 font-semibold">Birthdate</th>
                 <th className="px-5 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
@@ -301,12 +272,6 @@ export function CasesBankClient() {
                       <div className="h-3 w-24 rounded bg-[var(--color-surface-3)]" />
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <div className="ml-auto h-3 w-6 rounded bg-[var(--color-surface-3)]" />
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="h-5 w-14 rounded-full bg-[var(--color-surface-3)]" />
-                    </td>
-                    <td className="px-5 py-4 text-right">
                       <div className="ml-auto h-7 w-16 rounded-full bg-[var(--color-surface-3)]" />
                     </td>
                   </tr>
@@ -314,20 +279,20 @@ export function CasesBankClient() {
               ) : !data?.cases.length ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-5 py-16 text-center text-[13px] text-[var(--color-ink-muted)]"
                   >
                     No cases match your filters.
                   </td>
                 </tr>
               ) : (
-                data.cases.map((row) => (
+                data.cases.map((row, i) => (
                   <tr
                     key={row.id}
                     className="group border-b border-[var(--color-line)] smooth hover:bg-[var(--color-surface-2)]"
                   >
                     <td className="px-5 py-3.5 num-mono text-[11px] text-[var(--color-ink-faint)]">
-                      {row.id}
+                      {(page - 1) * PAGE_SIZE + i + 1}
                     </td>
                     <td className="px-5 py-3.5">
                       <button
@@ -335,20 +300,14 @@ export function CasesBankClient() {
                         onClick={() => void startCase(row.id)}
                         className="num-mono text-left text-[13px] font-semibold tracking-tight text-[var(--color-ink)] hover:underline"
                       >
-                        Case #{row.id}
+                        {row.title}
                       </button>
                     </td>
-                    <td
-                      className="max-w-[220px] truncate px-5 py-3.5 text-[12px] text-[var(--color-ink-muted)]"
-                      title={row.bucket}
-                    >
+                    <td className="px-5 py-3.5 text-[12px] text-[var(--color-ink-muted)]">
                       {row.bucket}
                     </td>
-                    <td className="px-5 py-3.5 text-right num text-[12px] text-[var(--color-ink-soft)]">
-                      {row.symptomCount}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <DifficultyBadge d={row.difficulty} />
+                    <td className="px-5 py-3.5 text-[12px] text-[var(--color-ink-muted)]">
+                      {row.chiefComplaintPreview}
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <Button
@@ -406,13 +365,13 @@ export function CasesBankClient() {
           />
           <FootNote
             icon={<Icon.Layers size={12} />}
-            label="Specialties"
-            body="Keyword heuristic on Disease + symptom columns."
+            label="Encounters"
+            body="Observations and diagnoses can be matched by shared ENCOUNTER IDs."
           />
           <FootNote
             icon={<Icon.Activity size={12} />}
-            label="Difficulty"
-            body="Derived from how many symptom slots are filled (Easy / Med / Hard)."
+            label="Quoted columns"
+            body='Queries use exact, case-sensitive identifiers (e.g. patients."Id").'
           />
         </div>
       </Surface>
@@ -432,40 +391,6 @@ function DarkPanel({ title, hint, value }: { title: string; hint: string; value:
         <ProgressBarOnDark value={70} tone="warm" showThumb className="" />
       </div>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center rounded-full border px-3 py-1 text-[12px] font-medium smooth",
-        active
-          ? "border-transparent bg-[var(--color-ink)] text-white"
-          : "border-[var(--color-line-strong)] bg-[var(--color-surface)] text-[var(--color-ink-soft)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function DifficultyBadge({ d }: { d: CaseListItem["difficulty"] }) {
-  const tone = d === "Easy" ? "accent" : d === "Medium" ? "warn" : "danger";
-  return (
-    <Badge tone={tone} size="xs" dot>
-      {d === "Medium" ? "Med." : d}
-    </Badge>
   );
 }
 

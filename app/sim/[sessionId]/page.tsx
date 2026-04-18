@@ -187,7 +187,7 @@ export default function SimPage() {
               Live encounter
             </Badge>
             <Badge tone="neutral">
-              case · #{data.session.case_id}
+              patient · {data.session.case_id}
             </Badge>
             <span className="num-mono text-[11px] text-[var(--color-ink-faint)]">
               session.{sessionId.slice(0, 8)}

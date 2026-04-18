@@ -4,6 +4,7 @@ import { CreateSessionRequestSchema, CreateSessionResponseSchema } from "@/lib/a
 import { loadCase } from "@/lib/cases/loader";
 import { projectFindings } from "@/lib/sim/findingsProjector";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPatientById } from "@/lib/synthea/queries";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -13,24 +14,14 @@ export async function POST(req: Request) {
   }
 
   const { caseId } = parsed.data;
-  let caseDoc;
-  try {
-    caseDoc = await loadCase(caseId);
-  } catch {
-    return NextResponse.json({ error: "Unknown case" }, { status: 404 });
-  }
+  // Request body still uses `caseId`; DB column is `sessions.patient` → `patients."Id"`.
+  const patient = await getPatientById(caseId).catch(() => null);
+  if (!patient) return NextResponse.json({ error: "Unknown patient" }, { status: 404 });
+
+  const caseDoc = await loadCase(caseId);
 
   const supabase = createAdminClient();
-  const casePk = /^\d+$/.test(caseId.trim()) ? Number(caseId) : caseId;
-  const { data: caseRow, error: caseErr } = await supabase
-    .from("cases")
-    .select("id")
-    .eq("id", casePk)
-    .maybeSingle();
-  if (caseErr) return NextResponse.json({ error: caseErr.message }, { status: 500 });
-  if (!caseRow) {
-    return NextResponse.json({ error: "Case not found in database." }, { status: 400 });
-  }
+  const patientFk = caseId.trim();
 
   const initialFindings = projectFindings({
     caseDoc,
@@ -41,20 +32,44 @@ export async function POST(req: Request) {
     diagnosisHypotheses: [],
   });
 
-  const { data, error } = await supabase
-    .from("sessions")
-    .insert({
-      case_id: casePk,
-      status: "active",
-      emotional_state: "anxiety",
-      pain_level: 4,
-      revealed_facts: [],
-      completed_exam_actions: [],
-      discovered_findings: initialFindings,
-      diagnosis_hypotheses: [],
-    })
-    .select("id, case_id, status")
-    .single();
+  type InsertedSessionRow = {
+    id: string;
+    status: string;
+    patient?: string | null;
+    patient_id?: string | null;
+    case_id?: string | null;
+  };
+
+  const insertBase = {
+    status: "active",
+    emotional_state: "anxiety",
+    pain_level: 4,
+    revealed_facts: [],
+    completed_exam_actions: [],
+    discovered_findings: initialFindings,
+    diagnosis_hypotheses: [],
+  };
+
+  async function tryInsert(
+    fk: Record<string, string>,
+    select: string,
+  ): Promise<{ data: InsertedSessionRow | null; error: { message: string } | null }> {
+    const res = await supabase.from("sessions").insert({ ...insertBase, ...fk }).select(select).single();
+    return {
+      data: (res.data as InsertedSessionRow | null) ?? null,
+      error: res.error ? { message: res.error.message } : null,
+    };
+  }
+
+  // Canonical schema: `sessions.patient` (text) → `patients."Id"`.
+  let { data, error } = await tryInsert({ patient: patientFk }, "id, status, patient");
+
+  if (error && /patient/i.test(error.message) && /column/i.test(error.message)) {
+    ({ data, error } = await tryInsert({ patient_id: patientFk }, "id, status, patient_id"));
+  }
+  if (error && /patient_id/i.test(error.message) && /column/i.test(error.message)) {
+    ({ data, error } = await tryInsert({ case_id: patientFk }, "id, status, case_id"));
+  }
 
   if (error || !data) {
     return NextResponse.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
@@ -62,7 +77,7 @@ export async function POST(req: Request) {
 
   const body = CreateSessionResponseSchema.parse({
     sessionId: data.id,
-    caseId: String(data.case_id),
+    caseId: String(data.patient ?? data.patient_id ?? data.case_id ?? patientFk),
     status: data.status,
   });
   return NextResponse.json(body);
