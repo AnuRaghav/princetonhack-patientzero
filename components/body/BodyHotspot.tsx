@@ -27,7 +27,7 @@ export function BodyHotspot({
     () => (selected || hovered ? color : "#000000"),
     [color, hovered, selected],
   );
-  const opacity = selected ? 0.48 : hovered ? 0.2 : 0.09;
+  const opacity = selected ? 0.88 : hovered ? 0.4 : 0.4;
   const scale = selected ? 1.16 : hovered ? 1.06 : 1;
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
