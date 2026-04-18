@@ -1,42 +1,74 @@
-# 🩺 AI-SP: The Next Gen Standardized Patient
+# AI-SP (hackathon MVP)
 
-**AI-SP** is a high-fidelity, multimodal simulation platform designed to replace expensive human actors in medical education. By combining **LLM-driven personas**, **low-latency voice interaction**, and an **interactive 3D anatomical interface**, we provide medical students with an on-demand, realistic clinical encounter experience.
+AI-SP is a **medical education simulation** where students take a history from an AI standardized patient and perform a **virtual physical exam** on a **3D body** (React Three Fiber). This repo is a **single Next.js app** (App Router + Route Handlers) with **Supabase Postgres** persistence.
 
-## 🚀 Mission Statement
-To democratize medical training by providing a scalable, low-cost, and immersive alternative to human Standardized Patients (SPs), enabling students to master diagnostic skills anytime, anywhere.
+## Architecture principle (read this once)
 
-## ✨ Features (The "Wow" Factor)
-*   **Dynamic Patient Personas:** No more rigid scripts. Our patients have moods, social backgrounds, and varying levels of health literacy powered by **GPT-4o**.
-*   **Voice-to-Voice Realism:** Students speak naturally to the patient using **OpenAI Whisper (STT)** and receive emotive, low-latency responses via **ElevenLabs (TTS)**.
-*   **3D Physical Exam Suite:** A rotatable 3D body map built with **Three.js**. Students can click specific organs to:
-    *   **Auscultate:** Hear real heart/lung audio files.
-    *   **Palpate:** Trigger haptic/voice pain reactions.
-    *   **Inspect:** View AI-generated images of specific physical findings (rashes, swelling).
-*   **Automated OSCE Feedback:** A separate "Proctor Agent" analyzes the transcript against gold-standard clinical checklists to provide an instant empathy and accuracy score.
+**The LLM is not the source of truth.**
 
-## 🛠️ Technical Stack
-*   **Frontend:** React.js + Tailwind CSS
-*   **3D Engine:** Three.js (WebGL)
-*   **AI Engine:** OpenAI GPT-4o / Claude 3.5 Sonnet
-*   **Audio Pipeline:** OpenAI Whisper (STT) & ElevenLabs (Streaming TTS)
-*   **Backend:** FastAPI (Python)
-*   **Knowledge Base:** Pinecone (RAG for grounding cases in medical literature)
+1. `data/cases/*.json` defines the patient and clinical facts.
+2. Postgres `sessions` stores deterministic state (`revealed_facts`, `completed_exam_actions`, `pain_level`, `emotional_state`).
+3. `/api/chat` uses `revealRules.ts` to decide which fact keys may surface from a student message.
+4. `/api/exam` uses `examEngine.ts` to return findings from the case JSON (no model hallucination).
+5. `patientResponder.ts` / `proctorScorer.ts` only **phrase** responses within an allowlist (OpenAI optional).
 
-## 📋 MVP (Minimum Viable Product)
-1.  **The Interviewer:** A voice-first web interface for history taking.
-2.  **The Case:** One fully realized clinical scenario (e.g., Acute Appendicitis) with "hidden" red flags.
-3.  **The Body:** A clickable anatomy map that triggers specific AI responses or audio clips.
-4.  **The Debrief:** A post-session summary showing clinical hits/misses.
+## Prerequisites
 
-## 🧠 Challenges & Solutions
-*   **Hallucination Control:** Using strict **System Prompting** and case-vignette grounding to ensure the AI never contradicts the medical facts of the scenario.
-*   **Latency:** Utilizing **WebSocket streaming** for audio to ensure the "round-trip" time from student speech to patient response is under 1.5 seconds.
-*   **Affect Modeling:** Passing emotional tags (e.g., `[pain]`, `[confusion]`) to the TTS engine to match the patient’s vocal tone with their current state.
+- Node.js 20+
+- A Supabase project (or local Supabase) with SQL from `supabase/schema.sql` applied
+- `supabase/seed.sql` run so the `appendicitis` case row exists (sessions FK require it)
 
-## 📈 Future Roadmap
-*   **VR/AR Support:** Bringing the 3D patient into a virtual exam room via WebXR.
-*   **Bias Analytics:** Helping students identify unconscious biases in their questioning style based on patient demographics.
-*   **EHR Integration:** Allowing students to "order" labs in a mock chart that populates based on the AI's state.
+## Environment
 
----
-*Developed for [Hackathon Name] 2024*
+Copy `.env.example` to `.env.local` and fill values:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (used by browser helpers; MVP UI talks to Route Handlers only)
+- `SUPABASE_SERVICE_ROLE_KEY` (**server only** — Route Handlers insert/update session tables)
+- `OPENAI_API_KEY` (optional — without it, patient + debrief copy uses deterministic templates)
+
+## Database setup
+
+1. In Supabase SQL editor (or `psql`), run `supabase/schema.sql`.
+2. Run `supabase/seed.sql` to insert the `appendicitis` case.
+3. Alternatively use Supabase CLI migrations in `supabase/migrations/`.
+
+> **RLS:** tables have RLS enabled with **no broad anon policies** on purpose — the demo uses the **service role** from trusted server code only.
+
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`, start the appendicitis session, chat, click body hotspots, then open the debrief.
+
+## Key routes
+
+| Route | Purpose |
+| --- | --- |
+| `POST /api/sessions` | Create session (`{ caseId }`) |
+| `GET /api/sessions/:sessionId` | Session + transcript turns |
+| `POST /api/chat` | Student message → deterministic reveals + patient reply |
+| `POST /api/exam` | `{ action, target }` → deterministic finding + session update |
+| `POST /api/score` | Persist score report + mark session completed |
+| `GET /api/score?sessionId=` | Fetch latest score report |
+| `GET /api/cases/:caseId` | Public-ish case summary |
+| `POST /api/voice/stt` / `tts` | Stubs for future audio pipeline |
+
+## Project layout (high level)
+
+- `lib/store/simUiStore.ts` — tiny Zustand store (body highlight shared with the canvas)
+- `app/(marketing)/page.tsx` — landing
+- `app/sim/[sessionId]/page.tsx` — encounter UI
+- `app/debrief/[sessionId]/page.tsx` — debrief (scores latest report; generates if missing)
+- `lib/sim/*` — deterministic simulation core
+- `lib/ai/*` — optional LLM expression layer
+- `data/cases/appendicitis.json` — canonical case file (mirrored in DB seed)
+
+## Scripts
+
+- `npm run dev` — Next dev server
+- `npm run build` — Production build
+- `npm run lint` — ESLint
