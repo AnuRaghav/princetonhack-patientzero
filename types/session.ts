@@ -6,6 +6,7 @@ export type SessionStatus = "active" | "completed" | "archived";
 export type SessionRow = {
   id: string;
   user_id: string | null;
+  /** Synthea patient id (`sessions.patient` → `patients."Id"`). Field name kept for API compatibility. */
   case_id: string;
   status: SessionStatus;
   emotional_state: string;

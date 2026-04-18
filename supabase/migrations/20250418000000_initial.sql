@@ -1,4 +1,5 @@
 -- Mirrors supabase/schema.sql for Supabase CLI migrations.
+-- Synthea `patients` / `conditions` / `observations` are imported separately; `sessions.patient` → `patients."Id"`.
 
 create extension if not exists "pgcrypto";
 
@@ -8,17 +9,14 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.cases (
-  id text primary key,
-  title text not null,
-  content jsonb not null,
-  created_at timestamptz not null default now()
+create table if not exists public.patients (
+  "Id" text primary key
 );
 
 create table if not exists public.sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id) on delete set null,
-  case_id text not null references public.cases (id) on delete restrict,
+  patient text not null references public.patients ("Id") on delete restrict,
   status text not null default 'active',
   emotional_state text not null default 'anxiety',
   pain_level int not null default 4,
@@ -28,7 +26,7 @@ create table if not exists public.sessions (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists sessions_case_id_idx on public.sessions (case_id);
+create index if not exists sessions_patient_idx on public.sessions (patient);
 create index if not exists sessions_user_id_idx on public.sessions (user_id);
 
 create table if not exists public.transcript_turns (
@@ -82,7 +80,7 @@ before update on public.sessions
 for each row execute procedure public.set_updated_at();
 
 alter table public.profiles enable row level security;
-alter table public.cases enable row level security;
+alter table public.patients enable row level security;
 alter table public.sessions enable row level security;
 alter table public.transcript_turns enable row level security;
 alter table public.exam_events enable row level security;

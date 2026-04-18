@@ -7,8 +7,11 @@ import { emptyFindings } from "@/lib/sim/findingsProjector";
 type SessionDbRow = {
   id: string;
   user_id: string | null;
-  /** Stored as text or bigint in DB — normalize to string for the API. */
-  case_id: string | number;
+  /** Canonical: `sessions.patient` → `patients."Id"` (Synthea). */
+  patient?: string | number | null;
+  /** Legacy alternates if DB was migrated differently. */
+  patient_id?: string | number | null;
+  case_id?: string | number | null;
   status: string;
   emotional_state: string;
   pain_level: number;
@@ -31,10 +34,19 @@ export function toSessionRow(row: SessionDbRow): SessionRow {
       ? (row.discovered_findings as EncounterFindings)
       : emptyFindings();
 
+  const patientKey =
+    row.patient != null && String(row.patient).length > 0
+      ? String(row.patient)
+      : row.patient_id != null
+        ? String(row.patient_id)
+        : row.case_id != null
+          ? String(row.case_id)
+          : "";
+
   return {
     id: row.id,
     user_id: row.user_id,
-    case_id: row.case_id != null ? String(row.case_id) : "",
+    case_id: patientKey,
     status: row.status as SessionStatus,
     emotional_state: row.emotional_state,
     pain_level: row.pain_level,

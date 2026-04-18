@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
+import type { ElementType, ReactNode } from "react";
 
 import { cn } from "./cn";
 
@@ -6,14 +6,15 @@ type Variant = "card" | "muted" | "outline" | "hero" | "hero-2";
 type Padding = "none" | "sm" | "md" | "lg" | "xl";
 type Radius = "sm" | "md" | "lg" | "xl" | "2xl";
 
-type SurfaceProps<T extends ElementType> = {
-  as?: T;
+type SurfaceProps = {
+  as?: ElementType;
   variant?: Variant;
   padding?: Padding;
   radius?: Radius;
   interactive?: boolean;
   children?: ReactNode;
-} & Omit<ComponentPropsWithoutRef<T>, "as" | "children">;
+  className?: string;
+} & Record<string, unknown>;
 
 const variantClasses: Record<Variant, string> = {
   card:
@@ -44,7 +45,7 @@ const radiusClasses: Record<Radius, string> = {
   "2xl": "rounded-[var(--radius-2xl)]",
 };
 
-export function Surface<T extends ElementType = "div">({
+export function Surface({
   as,
   variant = "card",
   padding = "md",
@@ -53,8 +54,11 @@ export function Surface<T extends ElementType = "div">({
   className,
   children,
   ...rest
-}: SurfaceProps<T>) {
-  const Component = (as ?? "div") as ElementType;
+}: SurfaceProps) {
+  // Intentionally loosened typing: generic ElementType inference can cause TS
+  // to infer `children: never` in some Next/React typecheck configurations.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Component: any = as ?? "div";
   const isDark = variant === "hero" || variant === "hero-2";
   return (
     <Component
@@ -69,7 +73,7 @@ export function Surface<T extends ElementType = "div">({
             : "cursor-pointer hover:shadow-[var(--shadow-card-lg)] hover:border-[var(--color-line-strong)]"),
         className,
       )}
-      {...rest}
+      {...(rest as Record<string, unknown>)}
     >
       {children}
     </Component>

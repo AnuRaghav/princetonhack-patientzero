@@ -9,7 +9,6 @@ import {
   Badge,
   Button,
   Icon,
-  ProgressBar,
   ProgressBarOnDark,
   Stat,
   Surface,
