@@ -1,6 +1,13 @@
 export type ExamAction = "palpate" | "auscultate" | "inspect";
-
-export type ExamTarget = "head" | "chest" | "abdomen" | "rlq";
+export type ExamTarget =
+  | "head"
+  | "chest"
+  | "abdomen"
+  | "stomach"
+  | "rlq"
+  | "arms"
+  | "legs"
+  | "joints";
 
 export type ExamActionRecord = {
   action: ExamAction;

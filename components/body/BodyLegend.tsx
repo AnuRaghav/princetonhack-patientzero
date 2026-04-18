@@ -1,12 +1,17 @@
 "use client";
 
 import { cn } from "@/components/ui";
+import type { ExamTarget } from "@/types/exam";
 
-const REGIONS: { id: string; label: string; hint: string }[] = [
-  { id: "head", label: "Head", hint: "Appearance" },
-  { id: "chest", label: "Chest", hint: "Lungs · cardiac" },
-  { id: "abdomen", label: "Abdomen", hint: "Palpate · auscultate" },
+const REGIONS: { id: ExamTarget; label: string; hint: string }[] = [
+  { id: "head", label: "Head", hint: "Inspect · appearance" },
+  { id: "chest", label: "Chest", hint: "Auscultate · lungs" },
+  { id: "abdomen", label: "Abdomen", hint: "Palpate · general" },
+  { id: "stomach", label: "Stomach", hint: "Palpate · tender · guard" },
   { id: "rlq", label: "RLQ", hint: "McBurney · rebound" },
+  { id: "arms", label: "Arms", hint: "Inspect · symmetry" },
+  { id: "legs", label: "Legs", hint: "Inspect · posture" },
+  { id: "joints", label: "Joints", hint: "Palpate · focal" },
 ];
 
 type Props = {

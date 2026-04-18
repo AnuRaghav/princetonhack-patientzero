@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import type { ExamIntent } from "@/components/body/BodyScene";
+import { REGION_INFO } from "@/components/body/BodyScene";
 import { ChatPanel } from "@/components/sim/ChatPanel";
 import { DiagnosisPanel } from "@/components/sim/DiagnosisPanel";
 import { FindingsPanel } from "@/components/sim/FindingsPanel";
@@ -19,6 +20,7 @@ import {
   cn,
 } from "@/components/ui";
 import { useSimUiStore } from "@/lib/store/simUiStore";
+import type { ExamTarget } from "@/types/exam";
 import type { DiagnosisHypothesis, EncounterFindings } from "@/types/findings";
 import type { SessionRow, TranscriptTurnRow } from "@/types/session";
 
@@ -42,6 +44,10 @@ type SessionPayload = {
   transcript: TranscriptTurnRow[];
 };
 
+function isExamTarget(value: string): value is ExamTarget {
+  return value in REGION_INFO;
+}
+
 export default function SimPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
@@ -50,10 +56,16 @@ export default function SimPage() {
   const [data, setData] = useState<SessionPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
+  const bodyHighlight = useSimUiStore((s) => s.bodyHighlight);
   const [lastFinding, setLastFinding] = useState<string | null>(null);
   const [lastTarget, setLastTarget] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [caseTitle, setCaseTitle] = useState<string | null>(null);
+
+  const currentSelection =
+    typeof bodyHighlight === "string" && isExamTarget(bodyHighlight)
+      ? REGION_INFO[bodyHighlight]
+      : null;
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/sessions/${sessionId}`);
@@ -281,11 +293,15 @@ export default function SimPage() {
           <Surface variant="card" padding="md" radius="lg" className="flex-1">
             <div className="flex items-center justify-between">
               <div className="text-[13px] font-semibold text-[var(--color-ink)]">
-                Last finding
+                {lastFinding ? "Last finding" : "Selection"}
               </div>
               {lastFinding ? (
                 <Badge tone="accent" size="xs" dot>
                   new
+                </Badge>
+              ) : currentSelection ? (
+                <Badge tone="info" size="xs">
+                  hover
                 </Badge>
               ) : null}
             </div>
@@ -298,6 +314,18 @@ export default function SimPage() {
                 ) : null}
                 <p className="text-[13px] leading-relaxed text-[var(--color-ink)]">
                   {lastFinding}
+                </p>
+              </div>
+            ) : currentSelection ? (
+              <div className="mt-3 space-y-2">
+                <div className="text-[13px] font-semibold text-[var(--color-ink)]">
+                  {currentSelection.label}
+                </div>
+                <div className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+                  exam · {currentSelection.action}
+                </div>
+                <p className="text-[12.5px] leading-relaxed text-[var(--color-ink-soft)]">
+                  {currentSelection.detail}
                 </p>
               </div>
             ) : (
