@@ -6,6 +6,9 @@ export type CaseListItem = {
   symptomCount: number;
   difficulty: "Easy" | "Medium" | "Hard";
   bucket: string;
+  /** Short, de-spoilered "chief complaint" string built from the first few symptoms.
+   *  Safe to show in the UI — never contains the disease name. */
+  chiefComplaintPreview: string;
 };
 
 export type CaseListResponse = {

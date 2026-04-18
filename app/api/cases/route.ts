@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { CaseListItem } from "@/lib/api/casesTypes";
 import { diseaseOrClauseForBucket } from "@/lib/cases/bucketFilters";
 import {
+  chiefComplaintFromRow,
   countSymptomsInDatasetRow,
   difficultyFromSymptomCount,
   escapeIlikePattern,
@@ -63,6 +64,7 @@ export async function GET(req: Request) {
         symptomCount: n,
         difficulty: difficultyFromSymptomCount(n),
         bucket: inferClinicalBucket(disease, preview),
+        chiefComplaintPreview: chiefComplaintFromRow(r),
       };
     });
 

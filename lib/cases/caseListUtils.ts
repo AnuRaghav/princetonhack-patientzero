@@ -53,6 +53,29 @@ export function symptomPreviewFromRow(row: Record<string, unknown>, maxLen = 120
   return parts.join(" ").slice(0, maxLen);
 }
 
+/**
+ * Human-readable chief-complaint string for case cards (e.g. "itching, skin rash, nodal eruptions").
+ * The dataset stores symptoms with underscores ("skin_rash") — we normalize, dedupe, and trim.
+ * Safe to show in the UI — never contains the diagnosis itself.
+ */
+export function chiefComplaintFromRow(
+  row: Record<string, unknown>,
+  maxSymptoms = 3,
+): string {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  for (let i = 1; i <= 17 && parts.length < maxSymptoms; i++) {
+    const v = row[`Symptom_${i}`];
+    if (typeof v !== "string") continue;
+    const cleaned = v.trim().replace(/_+/g, " ").replace(/\s+/g, " ").toLowerCase();
+    if (!cleaned || seen.has(cleaned)) continue;
+    seen.add(cleaned);
+    parts.push(cleaned);
+  }
+  if (parts.length === 0) return "Undifferentiated presentation";
+  return parts.join(", ");
+}
+
 /** Escape for PostgREST `ilike` pattern (best-effort). */
 export function escapeIlikePattern(q: string): string {
   return q.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");

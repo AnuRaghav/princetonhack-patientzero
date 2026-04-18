@@ -18,11 +18,9 @@ import {
 } from "@/components/ui";
 import type { CaseListItem } from "@/lib/api/casesTypes";
 
-type CaseListResp = {
+type FeaturedResp = {
   cases: CaseListItem[];
   total: number;
-  totalPages: number;
-  page: number;
 };
 
 export default function ConsolePage() {
@@ -36,10 +34,10 @@ export default function ConsolePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch("/api/cases?page=1&limit=4");
-        const json = (await res.json()) as CaseListResp & { error?: string };
+        const res = await fetch("/api/cases/featured?limit=4");
+        const json = (await res.json()) as FeaturedResp & { error?: string };
         if (!res.ok) {
-          if (!cancelled) setError(json.error ?? "Could not load case stats");
+          if (!cancelled) setError(json.error ?? "Could not load featured cases");
           return;
         }
         if (!cancelled) {
@@ -276,7 +274,7 @@ export default function ConsolePage() {
               Featured cases
             </h3>
             <p className="text-[12px] text-[var(--color-ink-muted)]">
-              First slice of the catalog. The full bank lives at /cases.
+              A fresh draw across specialties — diagnoses hidden. Refresh for a new slate.
             </p>
           </div>
           <Button
@@ -398,29 +396,51 @@ function CasePreviewCard({
 }) {
   const tone =
     item.difficulty === "Easy" ? "accent" : item.difficulty === "Medium" ? "warn" : "danger";
+
   return (
-    <div className="group flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-4 smooth hover:border-[var(--color-line-strong)] hover:shadow-[var(--shadow-card)]">
+    <div className="group relative flex flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-4 smooth hover:-translate-y-[1px] hover:border-[var(--color-line-strong)] hover:shadow-[var(--shadow-card)]">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[var(--color-accent-soft)] opacity-0 blur-2xl smooth group-hover:opacity-100"
+      />
+
       <div className="flex items-start justify-between gap-2">
-        <span className="num-mono text-[10px] text-[var(--color-ink-faint)]">
-          #{item.id.padStart(3, "0")}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+            Case #{item.id.padStart(3, "0")}
+          </span>
+          <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--color-ink-faint)]">
+            · {item.bucket}
+          </span>
+        </div>
         <Badge tone={tone} size="xs" dot>
           {item.difficulty}
         </Badge>
       </div>
-      <div>
-        <div className="line-clamp-2 text-[14px] font-semibold leading-snug text-[var(--color-ink)]">
-          {item.title}
-        </div>
-        <div className="mt-1 line-clamp-1 text-[11px] text-[var(--color-ink-muted)]">
-          {item.bucket}
-        </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+          chief complaint
+        </span>
+        <p className="line-clamp-3 text-[13.5px] font-semibold italic leading-snug text-[var(--color-ink)]">
+          “{item.chiefComplaintPreview}.”
+        </p>
       </div>
+
       <div className="mt-auto flex items-center justify-between border-t border-[var(--color-line)] pt-3">
         <span className="text-[11px] text-[var(--color-ink-muted)]">
-          <span className="num font-medium text-[var(--color-ink)]">{item.symptomCount}</span> symptoms
+          <span className="num font-medium text-[var(--color-ink)]">
+            {item.symptomCount}
+          </span>{" "}
+          symptoms · undiagnosed
         </span>
-        <Button size="sm" loading={loading} disabled={disabled} onClick={onSolve}>
+        <Button
+          size="sm"
+          loading={loading}
+          disabled={disabled}
+          onClick={onSolve}
+          trailingIcon={<Icon.ArrowUpRight size={12} />}
+        >
           Solve
         </Button>
       </div>
