@@ -43,6 +43,8 @@ function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
 }
 
 export type SpeechRecognitionCallbacks = {
+  /** Called when the browser confirms the mic is open and recognition has started. */
+  onStart?: () => void;
   /** Called on every result (interim + final). `isFinal` reflects the most recent chunk. */
   onTranscript?: (text: string, meta: { isFinal: boolean }) => void;
   /** Called only when a final result has been delivered. */
@@ -125,36 +127,61 @@ export function useSpeechRecognition(
     const rec = new Ctor();
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = false;
+    // Keep the mic open across short pauses so users can phrase questions
+    // naturally. We explicitly stop it ourselves after a final result lands.
+    rec.continuous = true;
     rec.maxAlternatives = 1;
 
     rec.onstart = () => {
       setIsListening(true);
+      callbacksRef.current.onStart?.();
     };
 
+    let finalAccum = "";
     rec.onresult = (ev) => {
       let interimText = "";
-      let finalText = "";
+      let newFinalText = "";
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
         const result = ev.results[i];
         if (!result) continue;
         const piece = result[0]?.transcript ?? "";
-        if (result.isFinal) finalText += piece;
+        if (result.isFinal) newFinalText += piece;
         else interimText += piece;
       }
-      const combined = (finalText + interimText).trim();
-      const isFinalChunk = finalText.length > 0 && interimText.length === 0;
+      if (newFinalText) finalAccum += (finalAccum ? " " : "") + newFinalText.trim();
+      const combined = `${finalAccum}${interimText ? ` ${interimText}` : ""}`.trim();
       if (combined) {
-        callbacksRef.current.onTranscript?.(combined, { isFinal: isFinalChunk });
+        callbacksRef.current.onTranscript?.(combined, {
+          isFinal: newFinalText.length > 0 && interimText.length === 0,
+        });
       }
-      if (finalText.trim()) {
-        callbacksRef.current.onFinal?.(finalText.trim());
+      // When a final segment arrives and the speaker has stopped (no interim
+      // tail), commit and close the mic. This gives a "press once, speak,
+      // pause, send" rhythm without forcing the user to tap Stop.
+      if (newFinalText && !interimText) {
+        const toCommit = finalAccum.trim();
+        if (toCommit) {
+          callbacksRef.current.onFinal?.(toCommit);
+          finalAccum = "";
+          try {
+            rec.stop();
+          } catch {
+            /* ignore */
+          }
+        }
       }
     };
 
     rec.onerror = (ev) => {
       const error = (ev as unknown as { error?: string }).error ?? "speech-error";
-      callbacksRef.current.onError?.(`Speech recognition error: ${error}`);
+      // `no-speech` and `aborted` are routine — surface them as info-level
+      // hints rather than blocking errors so the UI doesn't keep showing
+      // the user a scary banner every time they pause too long.
+      if (error === "no-speech" || error === "aborted") {
+        callbacksRef.current.onEnd?.();
+        return;
+      }
+      callbacksRef.current.onError?.(humanizeSpeechError(error));
     };
 
     rec.onend = () => {
@@ -184,4 +211,20 @@ export function useSpeechRecognition(
   }, []);
 
   return { isSupported, isListening, start, stop, abort };
+}
+
+function humanizeSpeechError(code: string): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone permission was denied. Allow access to use voice input.";
+    case "audio-capture":
+      return "No microphone detected. Plug one in and try again.";
+    case "network":
+      return "Speech recognition needs a network connection.";
+    case "language-not-supported":
+      return "This language isn't supported by your browser's speech recognition.";
+    default:
+      return `Speech recognition error: ${code}`;
+  }
 }

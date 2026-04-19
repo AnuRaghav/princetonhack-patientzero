@@ -16,6 +16,8 @@ type Props = {
   onStop: () => void;
   onInterrupt: () => void;
   className?: string;
+  /** Which STT path is active (browser Web Speech vs server upload). */
+  transport?: "browser" | "server";
 };
 
 const STATUS_LABELS: Record<EncounterStatus, string> = {
@@ -43,6 +45,7 @@ export function VoiceInputPanel({
   onStop,
   onInterrupt,
   className,
+  transport,
 }: Props) {
   if (!isSupported) {
     return (
@@ -52,8 +55,8 @@ export function VoiceInputPanel({
           className,
         )}
       >
-        Voice input requires the Web Speech API, which isn&rsquo;t available in
-        this browser. Switch to Chrome/Edge, or use the Text tab to continue.
+        Voice input isn&rsquo;t available in this browser. Use the Text tab to
+        continue, or grant microphone access and try again.
       </div>
     );
   }
@@ -129,7 +132,9 @@ export function VoiceInputPanel({
         </div>
       ) : (
         <p className="max-w-md text-center text-[11px] text-[var(--color-ink-muted)]">
-          Speak naturally. Your message is sent automatically when you pause.
+          {transport === "server"
+            ? "Tap the mic, speak, then tap again to send."
+            : "Speak naturally. Your message is sent automatically when you pause."}
         </p>
       )}
 

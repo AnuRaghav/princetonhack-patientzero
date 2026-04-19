@@ -51,9 +51,14 @@ export function useEncounterAudio(
     const el = audioRef.current;
     if (el) {
       try {
-        el.pause();
-        el.removeAttribute("src");
-        el.load();
+        if (!el.paused) el.pause();
+        // Only clear `src` if one is currently set — otherwise `load()` on an
+        // empty element triggers a spurious `error` event that callers (e.g.
+        // status state machines) misinterpret as a playback failure.
+        if (el.currentSrc || el.getAttribute("src")) {
+          el.removeAttribute("src");
+          el.load();
+        }
       } catch {
         /* ignore */
       }

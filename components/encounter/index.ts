@@ -18,10 +18,12 @@ export { useVoiceConversation } from "./hooks/useVoiceConversation";
 export type {
   UseVoiceConversationArgs,
   UseVoiceConversationReturn,
+  VoiceSttMode,
 } from "./hooks/useVoiceConversation";
 
 export { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 export { useEncounterAudio } from "./hooks/useEncounterAudio";
+export { useMediaRecorder } from "./hooks/useMediaRecorder";
 
 export type {
   EncounterBackend,

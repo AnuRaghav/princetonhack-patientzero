@@ -10,7 +10,7 @@ import { ConversationTabs } from "./ConversationTabs";
 import { TextInputPanel } from "./TextInputPanel";
 import { VoiceInputPanel } from "./VoiceInputPanel";
 import { useEncounterConversation } from "./hooks/useEncounterConversation";
-import { useVoiceConversation } from "./hooks/useVoiceConversation";
+import { useVoiceConversation, type VoiceSttMode } from "./hooks/useVoiceConversation";
 import type {
   DiscoveredFact,
   EncounterBackend,
@@ -43,6 +43,14 @@ export type EncounterConversationProps = {
   disableHydration?: boolean;
   /** ElevenLabs voice id; reserved for future API extension. */
   voiceId?: string;
+  /**
+   * STT transport. Defaults to `"auto"`:
+   *   - tries the browser Web Speech API first (low latency, live partials),
+   *   - falls back to MediaRecorder + `/api/voice/stt` (ElevenLabs Scribe) if
+   *     the browser path errors out for network reasons (e.g. campus wifi
+   *     blocking Google's speech servers).
+   */
+  voiceSttMode?: VoiceSttMode;
 
   onTranscriptChange?: (messages: EncounterMessage[]) => void;
   onDiscoveredFactsChange?: (facts: DiscoveredFact[]) => void;
@@ -82,6 +90,7 @@ export function EncounterConversation({
   onAssistantReply,
   className,
   title = "Patient encounter",
+  voiceSttMode = "auto",
 }: EncounterConversationProps) {
   const [mode, setMode] = useState<EncounterMode>(modeDefault);
 
@@ -102,10 +111,11 @@ export function EncounterConversation({
     isSupported: voiceSupported,
     isListening: voiceListening,
     isSpeaking: voiceSpeaking,
+    activeSttTransport,
     startListening,
     stopListening,
     interrupt: voiceInterrupt,
-  } = useVoiceConversation({ conversation });
+  } = useVoiceConversation({ conversation, sttMode: voiceSttMode });
 
   // Switching away from voice while listening: gracefully stop the mic so the
   // partial transcript isn't accidentally committed. Audio playback is allowed
@@ -187,6 +197,7 @@ export function EncounterConversation({
           onStart={startListening}
           onStop={stopListening}
           onInterrupt={voiceInterrupt}
+          transport={activeSttTransport}
         />
       )}
 

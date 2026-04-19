@@ -90,10 +90,15 @@ export const ScoreResponseSchema = z.object({
   summary: z.string(),
 });
 
-/** Voice stubs */
-export const SttRequestSchema = z.object({
-  audioBase64: z.string().optional(),
-  mimeType: z.string().optional(),
+/**
+ * STT — accepts either a multipart/form-data upload (preferred — `audio` file
+ * field + optional `language`/`mimeType` text fields) OR a JSON body with
+ * `audioBase64`. The route handler picks the right path based on `Content-Type`.
+ */
+export const SttJsonRequestSchema = z.object({
+  audioBase64: z.string().min(1),
+  mimeType: z.string().min(1),
+  language: z.string().optional(),
 });
 export const SttResponseSchema = z.object({
   text: z.string(),

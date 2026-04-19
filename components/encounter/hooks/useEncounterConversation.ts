@@ -53,15 +53,19 @@ export type UseEncounterConversationReturn = {
   setPartial: (text: string) => void;
   clearPartial: () => void;
   /**
-   * Commit current partial transcript as a clinician turn and dispatch the assistant call.
-   * No-op when `pendingPartial` is empty.
+   * Commit a transcript as a clinician turn and dispatch the assistant call.
+   * If `overrideText` is provided, uses it directly (bypasses the stale-state
+   * trap where a freshly-set `pendingPartial` hasn't re-rendered yet). Otherwise
+   * uses the latest committed `pendingPartial`. No-op when both are empty.
    */
-  commitPartial: (opts?: SendMessageOptions) => Promise<void>;
+  commitPartial: (opts?: SendMessageOptions & { overrideText?: string }) => Promise<void>;
 
   /** Mark the assistant audio as consumed (called after playback ends or is cancelled). */
   acknowledgeAudio: (messageId: string) => void;
   /** Update the global state machine status (used by voice/audio orchestrators). */
   setStatus: (status: EncounterStatus) => void;
+  /** Surface an error in the shared error banner. Pass `null` to clear. */
+  setError: (message: string | null) => void;
 
   /** Stop in-flight request + flag the session as paused. */
   interrupt: () => void;
@@ -302,13 +306,21 @@ export function useEncounterConversation(
     [backend, patientId, sessionId],
   );
 
+  // Always-fresh ref so callers can `commitPartial()` immediately after
+  // `setPartial()` in the same microtask without hitting a stale closure.
+  const pendingPartialRef = useRef(pendingPartial);
+  useEffect(() => {
+    pendingPartialRef.current = pendingPartial;
+  }, [pendingPartial]);
+
   const commitPartial = useCallback(
-    async (opts?: SendMessageOptions) => {
-      const text = pendingPartial.trim();
+    async (opts?: SendMessageOptions & { overrideText?: string }) => {
+      const { overrideText, ...sendOpts } = opts ?? {};
+      const text = (overrideText ?? pendingPartialRef.current).trim();
       if (!text) return;
-      await sendMessage(text, { source: "voice", ...opts });
+      await sendMessage(text, { source: "voice", ...sendOpts });
     },
-    [pendingPartial, sendMessage],
+    [sendMessage],
   );
 
   // Cleanup any in-flight request on unmount.
@@ -320,6 +332,11 @@ export function useEncounterConversation(
   }, []);
 
   const isReplying = status === "thinking" || status === "transcribing";
+
+  const setError = useCallback((message: string | null) => {
+    setLastError(message);
+    if (message) setStatus("error");
+  }, []);
 
   return useMemo(
     () => ({
@@ -336,6 +353,7 @@ export function useEncounterConversation(
       commitPartial,
       acknowledgeAudio,
       setStatus,
+      setError,
       interrupt,
       reset,
     }),
@@ -352,6 +370,7 @@ export function useEncounterConversation(
       pendingPartial,
       reset,
       sendMessage,
+      setError,
       setPartial,
       status,
     ],
