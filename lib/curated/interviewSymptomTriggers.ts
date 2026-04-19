@@ -143,6 +143,11 @@ const BY_SLUG: Record<CuratedCaseSlug, SymptomTrigger[]> = {
   "jason-mehta": JASON,
 };
 
+/** Labels used for scoring rubric key-symptom coverage (same triggers as interview discovery). */
+export function curatedInterviewSymptomLabels(slug: CuratedCaseSlug): string[] {
+  return BY_SLUG[slug].map((t) => t.label);
+}
+
 export type DiscoveredInterviewSymptom = {
   key: string;
   label: string;

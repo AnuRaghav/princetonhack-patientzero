@@ -2,12 +2,17 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import type { EncounterMessage } from "@/components/encounter";
 import { EncounterConversation } from "@/components/encounter";
+import { ChallengeFinishDialog } from "@/components/curated/ChallengeFinishDialog";
 import { CuratedInterviewFindings } from "@/components/curated/CuratedInterviewFindings";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
+import { cn } from "@/components/ui/cn";
+import { buildCuratedChallengeResult, curatedChallengeStorageKey } from "@/lib/curated/challengeResult";
+import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
 import { useSimUiStore } from "@/lib/store/simUiStore";
 import type { CuratedCase } from "@/lib/curatedCases";
 
@@ -35,14 +40,62 @@ type Props = {
 const difficultyTone = (d: CuratedCase["difficulty"]) =>
   d === "Medium" ? "warn" : "danger";
 
+function formatAssessmentClock(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props) {
   const { title, oneLiner, difficulty, estimatedMinutes, slug } = curatedCase;
   const [transcriptMessages, setTranscriptMessages] = useState<EncounterMessage[]>([]);
+  const [challengeStarted, setChallengeStarted] = useState(false);
+  const [assessmentStartedAt, setAssessmentStartedAt] = useState<number | null>(null);
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const router = useRouter();
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
 
   useEffect(() => {
     setBodyHighlight(null);
   }, [setBodyHighlight]);
+
+  useEffect(() => {
+    if (!challengeStarted || assessmentStartedAt == null) return;
+    const id = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [challengeStarted, assessmentStartedAt]);
+
+  const elapsedMs =
+    challengeStarted && assessmentStartedAt != null ? nowTick - assessmentStartedAt : 0;
+
+  const questionCount = useMemo(() => {
+    if (assessmentStartedAt == null) return 0;
+    return transcriptMessages.filter(
+      (m) => m.role === "clinician" && m.createdAt >= assessmentStartedAt,
+    ).length;
+  }, [transcriptMessages, assessmentStartedAt]);
+
+  const handleStartAssessment = () => {
+    setAssessmentStartedAt(Date.now());
+    setChallengeStarted(true);
+  };
+
+  const handleSubmitDiagnosis = (diagnosis: string) => {
+    if (assessmentStartedAt == null) return;
+    const payload = buildCuratedChallengeResult({
+      slug,
+      caseTitle: title,
+      diagnosisGuess: diagnosis,
+      messages: transcriptMessages,
+      assessmentStartedAt,
+    });
+    const score = computeCuratedChallengeScore(payload);
+    sessionStorage.setItem(curatedChallengeStorageKey(slug), JSON.stringify({ ...payload, score }));
+    setFinishDialogOpen(false);
+    router.push(`/cases/${slug}/results`);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,8 +143,39 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
         </div>
       </div>
 
+      {challengeStarted && assessmentStartedAt != null ? (
+        <Surface variant="card" padding="none" radius="xl" className="flex flex-wrap items-center justify-between gap-3 border border-[var(--color-line)] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Icon.Activity size={16} className="text-[var(--color-accent)]" />
+              <span className="num-mono text-[11px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+                Timer
+              </span>
+              <span className="num-mono text-[20px] font-semibold tabular-nums text-[var(--color-ink)]">
+                {formatAssessmentClock(elapsedMs)}
+              </span>
+            </div>
+            <div className="h-8 w-px bg-[var(--color-line)]" aria-hidden />
+            <div className="flex items-center gap-2 text-[13px] text-[var(--color-ink-muted)]">
+              <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+                Questions asked
+              </span>
+              <span className="text-[18px] font-semibold tabular-nums text-[var(--color-ink)]">{questionCount}</span>
+            </div>
+          </div>
+          <Badge tone="accent" size="xs" dot pulse>
+            Assessment live
+          </Badge>
+        </Surface>
+      ) : null}
+
       {/* SPLIT WORKSPACE =========================================== */}
-      <div className="grid gap-3 lg:grid-cols-12 lg:items-stretch">
+      <div
+        className={cn(
+          "relative grid gap-3 lg:grid-cols-12 lg:items-stretch",
+          !challengeStarted && "pointer-events-none opacity-[0.38]",
+        )}
+      >
         {/* LEFT — 3D exam (top) + interview findings (bottom), height matches transcript column */}
         <div className="flex h-full min-h-[560px] flex-col gap-3 lg:col-span-7">
           <Surface
@@ -128,23 +212,48 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             </div>
           </Surface>
 
-          <CuratedInterviewFindings slug={slug} messages={transcriptMessages} />
+          <CuratedInterviewFindings
+            slug={slug}
+            messages={transcriptMessages}
+            assessmentStartedAt={assessmentStartedAt}
+          />
         </div>
 
         {/* RIGHT — Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
         <EncounterConversation
+          key={challengeStarted ? `encounter-live-${slug}` : `encounter-hold-${slug}`}
           sessionId={`curated-case-${slug}`}
           backend="converse"
           patientId={slug}
           disableHydration
           title={`Encounter · ${title}`}
           patientContext={oneLiner}
-          initialGreeting={initialPatientGreeting}
+          initialGreeting={challengeStarted ? initialPatientGreeting : undefined}
           modeDefault="text"
           onTranscriptChange={setTranscriptMessages}
+          interactionLocked={!challengeStarted}
           className="flex h-full min-h-[560px] flex-col lg:col-span-5"
         />
+
+        {!challengeStarted ? (
+          <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-4">
+            <div className="max-w-md rounded-xl border border-white/15 bg-black px-5 py-4 text-center shadow-xl">
+              <p className="text-[14px] font-semibold text-white">Assessment not started</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-white/75">
+                Use <span className="font-medium text-white">Start assessment</span> in the bar below to unlock the
+                encounter, body exam, and findings.
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
+
+      <ChallengeFinishDialog
+        open={finishDialogOpen}
+        caseTitle={title}
+        onCancel={() => setFinishDialogOpen(false)}
+        onSubmit={handleSubmitDiagnosis}
+      />
 
       {/* ACTION FOOTER ============================================= */}
       <Surface variant="card" padding="lg" radius="xl">
@@ -152,27 +261,19 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-                Next step
+                Controls
               </span>
-              <Badge tone="warn" size="xs">
-                staged
+              <Badge tone={challengeStarted ? "accent" : "neutral"} size="xs">
+                {challengeStarted ? "in progress" : "ready"}
               </Badge>
             </div>
             <h2 className="text-[18px] font-semibold tracking-tight text-[var(--color-ink)]">
-              Start the challenge
+              {challengeStarted ? "End when you are ready" : "Begin the assessment"}
             </h2>
             <p className="max-w-xl text-[12.5px] text-[var(--color-ink-muted)]">
-              Coming next: scoring, timed prompts, and the deterministic
-              challenge flow. The patient and case are fixed — built for
-              repetition.
+              Start to begin the timer and enable the encounter. We track elapsed time, questions you ask, surfaced
+              symptoms, and the transcript until you finish and submit a diagnosis.
             </p>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-              <span>Built for repetition</span>
-              <span>·</span>
-              <span>curated</span>
-              <span>·</span>
-              <span>deterministic</span>
-            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -183,13 +284,26 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             >
               View rubric
             </Button>
+            {!challengeStarted ? (
+              <Button
+                variant="primary"
+                size="lg"
+                type="button"
+                trailingIcon={<Icon.Play size={14} />}
+                onClick={handleStartAssessment}
+              >
+                Start assessment
+              </Button>
+            ) : null}
             <Button
               variant="primary"
               size="lg"
-              disabled
-              trailingIcon={<Icon.Play size={14} />}
+              type="button"
+              trailingIcon={<Icon.ChevronRight size={14} />}
+              disabled={!challengeStarted}
+              onClick={() => setFinishDialogOpen(true)}
             >
-              Start Challenge
+              Finish challenge
             </Button>
           </div>
         </div>

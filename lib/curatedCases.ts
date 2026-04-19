@@ -62,3 +62,7 @@ export function getCuratedCase(slug: CuratedCaseSlug): CuratedCase {
   }
   return found;
 }
+
+export function isCuratedCaseSlug(value: string): value is CuratedCaseSlug {
+  return CURATED_CASES.some((c) => c.slug === value);
+}

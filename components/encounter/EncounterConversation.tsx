@@ -62,6 +62,8 @@ export type EncounterConversationProps = {
   className?: string;
   /** Override the title shown in the panel header. */
   title?: string;
+  /** When true, transcript is visible but inputs are disabled (e.g. before assessment start). */
+  interactionLocked?: boolean;
 };
 
 /**
@@ -91,6 +93,7 @@ export function EncounterConversation({
   className,
   title = "Patient encounter",
   voiceSttMode = "auto",
+  interactionLocked = false,
 }: EncounterConversationProps) {
   const [mode, setMode] = useState<EncounterMode>(modeDefault);
 
@@ -135,7 +138,11 @@ export function EncounterConversation({
       variant="card"
       padding="md"
       radius="lg"
-      className={cn("flex flex-col gap-4", className)}
+      className={cn(
+        "flex flex-col gap-4",
+        interactionLocked && "pointer-events-none select-none",
+        className,
+      )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -185,6 +192,7 @@ export function EncounterConversation({
       {mode === "text" ? (
         <TextInputPanel
           status={conversation.status}
+          busy={interactionLocked}
           onSend={(text) => conversation.sendMessage(text, { source: "text", synthesizeSpeech: false })}
         />
       ) : (
@@ -198,6 +206,7 @@ export function EncounterConversation({
           onStop={stopListening}
           onInterrupt={voiceInterrupt}
           transport={activeSttTransport}
+          locked={interactionLocked}
         />
       )}
 
