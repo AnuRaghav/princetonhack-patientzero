@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 
 import { Surface } from "@/components/ui";
 import { cn } from "@/components/ui/cn";
@@ -66,6 +66,10 @@ export type EncounterConversationProps = {
   interactionLocked?: boolean;
 };
 
+export type EncounterConversationHandle = {
+  appendMessages: (messages: EncounterMessage[]) => void;
+};
+
 /**
  * Reusable, single-shared-state patient encounter UI. Renders a transcript
  * plus either a text or voice input panel. Switching tabs never resets state.
@@ -77,24 +81,30 @@ export type EncounterConversationProps = {
  * Voice mode uses the browser Web Speech API for input and ElevenLabs (server-
  * side, via the chosen backend) for assistant audio playback.
  */
-export function EncounterConversation({
-  sessionId,
-  modeDefault = "text",
-  backend = "chat",
-  patientId,
-  systemPrompt,
-  patientContext,
-  initialGreeting,
-  initialMessages,
-  disableHydration,
-  onTranscriptChange,
-  onDiscoveredFactsChange,
-  onAssistantReply,
-  className,
-  title = "Patient encounter",
-  voiceSttMode = "auto",
-  interactionLocked = false,
-}: EncounterConversationProps) {
+export const EncounterConversation = forwardRef<
+  EncounterConversationHandle,
+  EncounterConversationProps
+>(function EncounterConversation(
+  {
+    sessionId,
+    modeDefault = "text",
+    backend = "chat",
+    patientId,
+    systemPrompt,
+    patientContext,
+    initialGreeting,
+    initialMessages,
+    disableHydration,
+    onTranscriptChange,
+    onDiscoveredFactsChange,
+    onAssistantReply,
+    className,
+    title = "Patient encounter",
+    voiceSttMode = "auto",
+    interactionLocked = false,
+  },
+  ref,
+) {
   const [mode, setMode] = useState<EncounterMode>(modeDefault);
 
   const conversation = useEncounterConversation({
@@ -108,6 +118,10 @@ export function EncounterConversation({
     onDiscoveredFactsChange,
     onAssistantReply,
   });
+
+  useImperativeHandle(ref, () => ({
+    appendMessages: conversation.appendMessages,
+  }));
 
   const {
     audioRef,
@@ -214,4 +228,4 @@ export function EncounterConversation({
       <audio ref={audioRef} className="hidden" aria-hidden />
     </Surface>
   );
-}
+});

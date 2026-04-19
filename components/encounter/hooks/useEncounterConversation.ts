@@ -71,6 +71,8 @@ export type UseEncounterConversationReturn = {
   interrupt: () => void;
   /** Wipe transcript + facts + status. */
   reset: () => void;
+  /** Append transcript lines without calling the assistant (e.g. exam choreographed turns). */
+  appendMessages: (messages: EncounterMessage[]) => void;
 };
 
 const TERMINAL_STATUSES: ReadonlySet<EncounterStatus> = new Set([
@@ -224,6 +226,11 @@ export function useEncounterConversation(
     hydratedRef.current = false;
   }, []);
 
+  const appendMessages = useCallback((toAppend: EncounterMessage[]) => {
+    if (!toAppend.length) return;
+    setMessages((prev) => [...prev, ...toAppend]);
+  }, []);
+
   const sendMessage = useCallback(
     async (text: string, opts?: SendMessageOptions) => {
       const trimmed = text.trim();
@@ -356,9 +363,11 @@ export function useEncounterConversation(
       setError,
       interrupt,
       reset,
+      appendMessages,
     }),
     [
       acknowledgeAudio,
+      appendMessages,
       clearPartial,
       commitPartial,
       discoveredFacts,

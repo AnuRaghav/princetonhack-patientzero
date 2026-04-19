@@ -13,6 +13,7 @@ import {
   type BodyLayoutPresetId,
   type ModelBounds,
 } from "./hotspotLayout";
+import { BodyExamToolsPanel } from "./BodyExamToolsPanel";
 import { BodyLegend } from "./BodyLegend";
 import { BodyModel } from "./BodyModel";
 import { REGION_INFO } from "./regionInfo";
@@ -35,6 +36,8 @@ type Props = {
    * @default true
    */
   showHotspots?: boolean;
+  /** When set, vital-sign buttons append choreographed transcript lines (curated shell). */
+  onVitalExam?: (tool: "stethoscope" | "bp") => void;
 };
 
 function mapRegionToIntent(region: ExamTarget): ExamIntent {
@@ -47,6 +50,7 @@ export function BodyScene({
   pulseTargets,
   layoutPreset = "default",
   showHotspots = true,
+  onVitalExam,
 }: Props) {
   const highlight = useSimUiStore((s) => s.bodyHighlight);
   const pulse = useCallback(
@@ -79,6 +83,12 @@ export function BodyScene({
         }}
         aria-hidden
       />
+
+      {onVitalExam ? (
+        <div className="pointer-events-none absolute left-3 top-3 z-10">
+          <BodyExamToolsPanel onPerform={onVitalExam} />
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute right-3 top-3 z-10">
         <BodyLegend

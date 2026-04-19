@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { EncounterMessage } from "@/components/encounter";
+import type {
+  EncounterConversationHandle,
+  EncounterMessage,
+} from "@/components/encounter";
 import { mapSymptomRegionsToHotspots } from "@/components/body/regionInfo";
 import { EncounterConversation } from "@/components/encounter";
 import { ChallengeFinishDialog } from "@/components/curated/ChallengeFinishDialog";
@@ -21,6 +24,7 @@ import {
 } from "@/lib/curated/behavioralScore";
 import { buildCuratedChallengeResult, curatedChallengeStorageKey } from "@/lib/curated/challengeResult";
 import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
+import { vitalReadingsForCase } from "@/lib/curated/vitalExamReadings";
 import { useSimUiStore } from "@/lib/store/simUiStore";
 import type { CuratedCase, CuratedCaseSlug } from "@/lib/curatedCases";
 import type { ExamTarget } from "@/types/exam";
@@ -104,8 +108,56 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   const [scoring, setScoring] = useState(false);
   const pulseTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const encounterRef = useRef<EncounterConversationHandle>(null);
   const router = useRouter();
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
+
+  const handleVitalExam = useCallback(
+    (tool: "stethoscope" | "bp") => {
+      if (!challengeStarted || assessmentStartedAt == null) return;
+      const api = encounterRef.current;
+      if (!api) return;
+      const readings = vitalReadingsForCase(slug);
+      const now = Date.now();
+      const id = (suffix: string) => `exam-${now}-${suffix}`;
+      if (tool === "stethoscope") {
+        api.appendMessages([
+          {
+            id: id("c"),
+            role: "clinician",
+            text: "*Performs cardiac auscultation with stethoscope*",
+            source: "text",
+            createdAt: now,
+          },
+          {
+            id: id("p"),
+            role: "patient",
+            text: `*BPM: ${readings.bpm}*`,
+            source: "text",
+            createdAt: now + 1,
+          },
+        ]);
+      } else {
+        api.appendMessages([
+          {
+            id: id("c"),
+            role: "clinician",
+            text: "*Measures blood pressure with sphygmomanometer*",
+            source: "text",
+            createdAt: now,
+          },
+          {
+            id: id("p"),
+            role: "patient",
+            text: `*BP: ${readings.systolic}/${readings.diastolic} mmHg*`,
+            source: "text",
+            createdAt: now + 1,
+          },
+        ]);
+      }
+    },
+    [assessmentStartedAt, challengeStarted, slug],
+  );
 
   const handleNewSymptomDiscovered = useCallback((payload: NewSymptomDiscoveredPayload) => {
     const mapped = mapSymptomRegionsToHotspots(payload.regions);
@@ -306,6 +358,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
                 layoutPreset={slug}
                 pulseTargets={symptomPulseTargets}
                 showHotspots={false}
+                onVitalExam={handleVitalExam}
                 onExam={(intent) => {
                   setBodyHighlight(intent.target);
                 }}
@@ -328,6 +381,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
 
         {/* RIGHT — Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
         <EncounterConversation
+          ref={encounterRef}
           key={challengeStarted ? `encounter-live-${slug}` : `encounter-hold-${slug}`}
           sessionId={`curated-case-${slug}`}
           backend="converse"
