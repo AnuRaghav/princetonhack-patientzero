@@ -214,15 +214,41 @@ export function buildBehavioralPrompt(args: {
   return { system, user };
 }
 
-/** Pull the first {...} JSON object from a possibly noisy LLM string. */
+/**
+ * Strip reasoning-model scratchpad blocks (e.g. K2 Think emits
+ * `<think>...</think>` before the final answer). Removes paired tags and any
+ * trailing unclosed `<think>...` prefix so only the user-visible answer remains.
+ */
+function stripReasoningTags(raw: string): string {
+  let out = raw.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "");
+  const closing = out.search(/<\/think>/i);
+  if (closing !== -1) out = out.slice(closing + "</think>".length);
+  return out.trim();
+}
+
+/** Pull the last balanced {...} JSON object from a possibly noisy LLM string. */
 function extractJsonObject(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (trimmed.startsWith("{") && trimmed.endsWith("}")) return trimmed;
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) return fenced[1].trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start !== -1 && end > start) return trimmed.slice(start, end + 1);
+  const cleaned = stripReasoningTags(raw);
+  if (!cleaned) return null;
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
+
+  const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) {
+    const inside = fenced[1].trim();
+    if (inside.startsWith("{") && inside.endsWith("}")) return inside;
+  }
+
+  const end = cleaned.lastIndexOf("}");
+  if (end === -1) return null;
+  let depth = 0;
+  for (let i = end; i >= 0; i -= 1) {
+    const ch = cleaned[i];
+    if (ch === "}") depth += 1;
+    else if (ch === "{") {
+      depth -= 1;
+      if (depth === 0) return cleaned.slice(i, end + 1);
+    }
+  }
   return null;
 }
 
