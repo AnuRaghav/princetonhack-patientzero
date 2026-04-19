@@ -9,6 +9,61 @@ function alreadyHasFinding(actions: ExamActionRecord[], findingKey: string) {
   return actions.some((a) => a.finding_key === findingKey);
 }
 
+function requireFinding(caseDoc: CaseDocument, findingKey: string) {
+  const entry = findByKey(caseDoc, findingKey);
+  if (!entry) throw new Error(`Case missing ${findingKey} finding`);
+  return entry;
+}
+
+function resultFromEntry(
+  entry: NonNullable<ReturnType<typeof findByKey>>,
+  visualOverride?: ExamEngineResult["visualCue"],
+): ExamEngineResult {
+  return {
+    finding_key: entry.finding_key,
+    finding: entry.student_finding,
+    painDelta: entry.pain_delta ?? 0,
+    audioUrl: null,
+    visualCue: visualOverride !== undefined ? visualOverride : (entry.visual ?? null),
+  };
+}
+
+function resolvePalpateRlq(
+  caseDoc: CaseDocument,
+  completed: ExamActionRecord[],
+): ExamEngineResult {
+  if (!alreadyHasFinding(completed, "palpate_rlq")) {
+    return resultFromEntry(requireFinding(caseDoc, "palpate_rlq"));
+  }
+  if (!alreadyHasFinding(completed, "rebound_rlq")) {
+    return resultFromEntry(requireFinding(caseDoc, "rebound_rlq"));
+  }
+  return {
+    finding_key: "palpate_rlq_repeat",
+    finding:
+      "Repeat palpation continues to demonstrate RLQ tenderness without new findings on this pass.",
+    painDelta: 0,
+    audioUrl: null,
+    visualCue: { highlight: "rlq", severity: "medium" },
+  };
+}
+
+function resolvePalpateAbdomen(caseDoc: CaseDocument, target: ExamTarget): ExamEngineResult {
+  const entry = requireFinding(caseDoc, "palpate_abdomen_general");
+  const visual = entry.visual ? { ...entry.visual, highlight: target } : null;
+  return resultFromEntry(entry, visual);
+}
+
+type Resolver = (caseDoc: CaseDocument, completed: ExamActionRecord[], target: ExamTarget) => ExamEngineResult;
+
+const RESOLVERS: Record<string, Resolver> = {
+  "palpate:rlq": (doc, completed) => resolvePalpateRlq(doc, completed),
+  "palpate:abdomen": (doc, _c, target) => resolvePalpateAbdomen(doc, target),
+  "palpate:stomach": (doc, _c, target) => resolvePalpateAbdomen(doc, target),
+  "auscultate:chest": (doc) => resultFromEntry(requireFinding(doc, "auscultate_chest")),
+  "inspect:head": (doc) => resultFromEntry(requireFinding(doc, "inspect_head")),
+};
+
 /**
  * Maps (action, target) + prior exam actions to a deterministic finding.
  * No LLM calls here.
@@ -20,77 +75,8 @@ export function runExam(
   completed: ExamActionRecord[],
 ): ExamEngineResult {
   const key = `${action}:${target}`;
-
-  if (action === "palpate" && target === "rlq") {
-    if (!alreadyHasFinding(completed, "palpate_rlq")) {
-      const entry = findByKey(caseDoc, "palpate_rlq");
-      if (!entry) throw new Error("Case missing palpate_rlq finding");
-      return {
-        finding_key: entry.finding_key,
-        finding: entry.student_finding,
-        painDelta: entry.pain_delta ?? 0,
-        audioUrl: null,
-        visualCue: entry.visual ?? null,
-      };
-    }
-    if (!alreadyHasFinding(completed, "rebound_rlq")) {
-      const entry = findByKey(caseDoc, "rebound_rlq");
-      if (!entry) throw new Error("Case missing rebound_rlq finding");
-      return {
-        finding_key: entry.finding_key,
-        finding: entry.student_finding,
-        painDelta: entry.pain_delta ?? 0,
-        audioUrl: null,
-        visualCue: entry.visual ?? null,
-      };
-    }
-    return {
-      finding_key: "palpate_rlq_repeat",
-      finding:
-        "Repeat palpation continues to demonstrate RLQ tenderness without new findings on this pass.",
-      painDelta: 0,
-      audioUrl: null,
-      visualCue: { highlight: "rlq", severity: "medium" },
-    };
-  }
-
-  if (action === "palpate" && (target === "abdomen" || target === "stomach")) {
-    const entry = findByKey(caseDoc, "palpate_abdomen_general");
-    if (!entry) throw new Error("Case missing palpate_abdomen_general finding");
-    return {
-      finding_key: entry.finding_key,
-      finding: entry.student_finding,
-      painDelta: entry.pain_delta ?? 0,
-      audioUrl: null,
-      visualCue: entry.visual
-        ? { ...entry.visual, highlight: target }
-        : null,
-    };
-  }
-
-  if (action === "auscultate" && target === "chest") {
-    const entry = findByKey(caseDoc, "auscultate_chest");
-    if (!entry) throw new Error("Case missing auscultate_chest finding");
-    return {
-      finding_key: entry.finding_key,
-      finding: entry.student_finding,
-      painDelta: entry.pain_delta ?? 0,
-      audioUrl: null,
-      visualCue: entry.visual ?? null,
-    };
-  }
-
-  if (action === "inspect" && target === "head") {
-    const entry = findByKey(caseDoc, "inspect_head");
-    if (!entry) throw new Error("Case missing inspect_head finding");
-    return {
-      finding_key: entry.finding_key,
-      finding: entry.student_finding,
-      painDelta: entry.pain_delta ?? 0,
-      audioUrl: null,
-      visualCue: entry.visual ?? null,
-    };
-  }
+  const resolver = RESOLVERS[key];
+  if (resolver) return resolver(caseDoc, completed, target);
 
   return {
     finding_key: `noop:${key}`,

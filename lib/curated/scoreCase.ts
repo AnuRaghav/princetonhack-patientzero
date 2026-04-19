@@ -174,69 +174,181 @@ function questionCountEfficiencyPoints5(q: number, minQ: number, maxQ: number): 
   return Math.round(5 * (1 - penalty) * 1000) / 1000;
 }
 
+type FeedbackBucket = {
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+};
+
+function appendDiagnosisFeedback(
+  bucket: FeedbackBucket,
+  matched: ScoreCaseMetrics["diagnosisMatched"],
+): void {
+  if (matched === "correct") {
+    bucket.strengths.push("Final diagnosis matches the reference diagnosis.");
+    return;
+  }
+  if (matched === "acceptable") {
+    bucket.strengths.push("Final diagnosis is in the acceptable differential (partial credit).");
+    bucket.suggestions.push("Review distinguishing features to reach the primary diagnosis next time.");
+    return;
+  }
+  bucket.weaknesses.push("Submitted diagnosis did not match expected or acceptable answers.");
+  bucket.suggestions.push("Use a structured differential and tie findings back to the leading diagnosis.");
+}
+
+function appendSymptomFeedback(bucket: FeedbackBucket, symptomRatio: number): void {
+  if (symptomRatio >= 0.75) {
+    bucket.strengths.push("Strong coverage of key interview findings.");
+    return;
+  }
+  if (symptomRatio < 0.45) {
+    bucket.weaknesses.push("Several key symptoms were not surfaced during the encounter.");
+    bucket.suggestions.push("Ask targeted history questions aligned with the chief complaint and associated systems.");
+  }
+}
+
+function appendExtraInfoFeedback(
+  bucket: FeedbackBucket,
+  extraInfoRatio: number,
+  helpfulExtraCount: number,
+): void {
+  if (helpfulExtraCount === 0) return;
+  if (extraInfoRatio >= 0.7) {
+    bucket.strengths.push("Helpful contextual information was explored.");
+    return;
+  }
+  if (extraInfoRatio < 0.35) {
+    bucket.weaknesses.push("Important contextual details from the rubric were missed.");
+    bucket.suggestions.push("Briefly explore relevant social, functional, or risk-related context.");
+  }
+}
+
+function appendQuestionYieldFeedback(bucket: FeedbackBucket, metrics: ScoreCaseMetrics): void {
+  if (metrics.questionsAsked > 0 && metrics.questionYield >= 0.45) {
+    bucket.strengths.push("Questions showed reasonable yield (useful vs total).");
+    return;
+  }
+  if (metrics.questionsAsked === 0) {
+    bucket.weaknesses.push("No clinician questions recorded.");
+    bucket.suggestions.push("Drive the interview with focused, open-ended and targeted questions.");
+    return;
+  }
+  if (metrics.questionYield < 0.35) {
+    bucket.weaknesses.push("Low question yield — many questions did not advance the assessment.");
+    bucket.suggestions.push("Reduce repetition; clarify one topic before moving on.");
+  }
+}
+
+function appendEfficiencyFeedback(
+  bucket: FeedbackBucket,
+  metrics: ScoreCaseMetrics,
+  breakdown: ScoreCaseBreakdown,
+  rubric: ScoreRubric,
+): void {
+  const overTime = metrics.timeTakenSec > rubric.targetTimeSec;
+  const lowEfficiency = breakdown.efficiencyOutOf10 < MAX_EFFICIENCY * 0.55;
+  if (overTime && lowEfficiency) {
+    bucket.weaknesses.push("Encounter ran longer than the target window or questions exceeded the efficient range.");
+    bucket.suggestions.push("Practice prioritizing high-yield symptoms and limiting redundant questioning.");
+  }
+  if (breakdown.behavioralOutOf20 < MAX_BEHAVIORAL * 0.55) {
+    bucket.suggestions.push("Review communication behaviors (rapport, clarity, shared decision-making) for additional points.");
+  }
+}
+
 function buildFeedback(args: {
   metrics: ScoreCaseMetrics;
   breakdown: ScoreCaseBreakdown;
   rubric: ScoreRubric;
 }): ScoreCaseFeedback {
   const { metrics, breakdown, rubric } = args;
-  const strengths: string[] = [];
-  const weaknesses: string[] = [];
-  const suggestions: string[] = [];
+  const bucket: FeedbackBucket = { strengths: [], weaknesses: [], suggestions: [] };
 
-  if (metrics.diagnosisMatched === "correct") {
-    strengths.push("Final diagnosis matches the reference diagnosis.");
-  } else if (metrics.diagnosisMatched === "acceptable") {
-    strengths.push("Final diagnosis is in the acceptable differential (partial credit).");
-    suggestions.push("Review distinguishing features to reach the primary diagnosis next time.");
-  } else {
-    weaknesses.push("Submitted diagnosis did not match expected or acceptable answers.");
-    suggestions.push("Use a structured differential and tie findings back to the leading diagnosis.");
-  }
+  appendDiagnosisFeedback(bucket, metrics.diagnosisMatched);
+  appendSymptomFeedback(bucket, metrics.symptomRatio);
+  appendExtraInfoFeedback(bucket, metrics.extraInfoRatio, rubric.helpfulExtraInfo.length);
+  appendQuestionYieldFeedback(bucket, metrics);
+  appendEfficiencyFeedback(bucket, metrics, breakdown, rubric);
 
-  if (metrics.symptomRatio >= 0.75) {
-    strengths.push("Strong coverage of key interview findings.");
-  } else if (metrics.symptomRatio < 0.45) {
-    weaknesses.push("Several key symptoms were not surfaced during the encounter.");
-    suggestions.push("Ask targeted history questions aligned with the chief complaint and associated systems.");
-  }
-
-  if (metrics.extraInfoRatio >= 0.7 && rubric.helpfulExtraInfo.length > 0) {
-    strengths.push("Helpful contextual information was explored.");
-  } else if (metrics.extraInfoRatio < 0.35 && rubric.helpfulExtraInfo.length > 0) {
-    weaknesses.push("Important contextual details from the rubric were missed.");
-    suggestions.push("Briefly explore relevant social, functional, or risk-related context.");
-  }
-
-  const yieldOk = metrics.questionsAsked > 0 && metrics.questionYield >= 0.45;
-  if (yieldOk) {
-    strengths.push("Questions showed reasonable yield (useful vs total).");
-  } else if (metrics.questionsAsked === 0) {
-    weaknesses.push("No clinician questions recorded.");
-    suggestions.push("Drive the interview with focused, open-ended and targeted questions.");
-  } else if (metrics.questionYield < 0.35) {
-    weaknesses.push("Low question yield — many questions did not advance the assessment.");
-    suggestions.push("Reduce repetition; clarify one topic before moving on.");
-  }
-
-  if (
-    metrics.timeTakenSec > rubric.targetTimeSec &&
-    breakdown.efficiencyOutOf10 < MAX_EFFICIENCY * 0.55
-  ) {
-    weaknesses.push("Encounter ran longer than the target window or questions exceeded the efficient range.");
-    suggestions.push("Practice prioritizing high-yield symptoms and limiting redundant questioning.");
-  }
-
-  if (breakdown.behavioralOutOf20 < MAX_BEHAVIORAL * 0.55) {
-    suggestions.push("Review communication behaviors (rapport, clarity, shared decision-making) for additional points.");
-  }
-
-  return { strengths, weaknesses, suggestions };
+  return bucket;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Main                                                                       */
 /* -------------------------------------------------------------------------- */
+
+type CoverageScore = {
+  found: number;
+  total: number;
+  ratio: number;
+  points: number;
+};
+
+function coverageScore(
+  haystack: readonly string[],
+  needles: readonly string[],
+  maxPoints: number,
+): CoverageScore {
+  const total = needles.length;
+  const found = intersectionCount(haystack, needles);
+  const ratio = total > 0 ? found / total : 1;
+  return { found, total, ratio, points: proportionScore(found, total, maxPoints) };
+}
+
+type QuestionStats = {
+  questionsAsked: number;
+  useful: number;
+  questionYield: number;
+  questionYieldRaw: number;
+  qualityPoints: number;
+};
+
+function computeQuestionStats(run: SimulationRun): QuestionStats {
+  const questionsAsked = Math.max(0, run.questionsAsked);
+  if (questionsAsked === 0) {
+    return {
+      questionsAsked: 0,
+      useful: 0,
+      questionYield: 0,
+      questionYieldRaw: Number.NaN,
+      qualityPoints: 0,
+    };
+  }
+  const useful = clamp(run.usefulQuestions, 0, questionsAsked);
+  const ratio = useful / questionsAsked;
+  return {
+    questionsAsked,
+    useful,
+    questionYield: ratio,
+    questionYieldRaw: ratio,
+    qualityPoints: proportionScore(useful, questionsAsked, MAX_QUESTION_QUALITY),
+  };
+}
+
+function computeTimeEfficiencyRatio(
+  timeTakenSec: number,
+  targetTimeSec: number,
+  maxTimeSec: number,
+): number {
+  if (timeTakenSec <= targetTimeSec) return 1;
+  if (maxTimeSec <= targetTimeSec) return 0;
+  return clamp((maxTimeSec - timeTakenSec) / (maxTimeSec - targetTimeSec), 0, 1);
+}
+
+function computeQuestionCountEfficiencyRatio(
+  questionsAsked: number,
+  qMin: number,
+  qMax: number,
+): number {
+  if (questionsAsked >= qMin && questionsAsked <= qMax) return 1;
+  if (questionsAsked < qMin && qMin > 0) return questionsAsked / qMin;
+  if (questionsAsked > qMax) {
+    const span = Math.max(qMax - qMin, 1);
+    return clamp(1 - (questionsAsked - qMax) / span, 0, 1);
+  }
+  return 0;
+}
 
 export function scoreCase(
   run: SimulationRun,
@@ -244,63 +356,26 @@ export function scoreCase(
   options?: { includeFeedback?: boolean },
 ): ScoreCaseResult {
   const behavioralScore = clamp(run.behavioralScore ?? 0, 0, MAX_BEHAVIORAL);
-
   const diag = scoreDiagnosis({ finalDiagnosis: run.finalDiagnosis, rubric });
 
-  const keyTotal = rubric.keySymptoms.length;
-  const keyFound = intersectionCount(run.symptomsRevealed, rubric.keySymptoms);
-  const symptomRatio = keyTotal > 0 ? keyFound / keyTotal : 1;
-  const symptomsOutOf15 = proportionScore(keyFound, keyTotal, MAX_SYMPTOMS);
-
-  const extraTotal = rubric.helpfulExtraInfo.length;
-  const extraFound = intersectionCount(run.extraInfoFound, rubric.helpfulExtraInfo);
-  const extraInfoRatio = extraTotal > 0 ? extraFound / extraTotal : 1;
-  const extraInfoOutOf10 = proportionScore(extraFound, extraTotal, MAX_EXTRA);
-
-  const questionsAsked = Math.max(0, run.questionsAsked);
-  const useful =
-    questionsAsked === 0 ? 0 : clamp(run.usefulQuestions, 0, questionsAsked);
-  const questionYieldRaw = questionsAsked === 0 ? Number.NaN : useful / questionsAsked;
-  const questionYield = questionsAsked === 0 ? 0 : questionYieldRaw;
-  const questionQualityOutOf15 =
-    questionsAsked === 0 ? 0 : proportionScore(useful, questionsAsked, MAX_QUESTION_QUALITY);
+  const symptoms = coverageScore(run.symptomsRevealed, rubric.keySymptoms, MAX_SYMPTOMS);
+  const extra = coverageScore(run.extraInfoFound, rubric.helpfulExtraInfo, MAX_EXTRA);
+  const questions = computeQuestionStats(run);
 
   const timeTaken = clamp(run.timeTakenSec, 0, Number.MAX_SAFE_INTEGER);
   const timePts = timeEfficiencyPoints5(timeTaken, rubric.targetTimeSec, rubric.maxTimeSec);
   const qPts = questionCountEfficiencyPoints5(
-    questionsAsked,
+    questions.questionsAsked,
     rubric.idealQuestionCountMin,
     rubric.idealQuestionCountMax,
   );
   const efficiencyOutOf10 = Math.round((timePts + qPts) * 1000) / 1000;
 
-  const timeEfficiencyRatio =
-    run.timeTakenSec <= rubric.targetTimeSec
-      ? 1
-      : rubric.maxTimeSec <= rubric.targetTimeSec
-        ? 0
-        : clamp(
-            (rubric.maxTimeSec - run.timeTakenSec) / (rubric.maxTimeSec - rubric.targetTimeSec),
-            0,
-            1,
-          );
-
-  const qMin = rubric.idealQuestionCountMin;
-  const qMax = rubric.idealQuestionCountMax;
-  let questionCountEfficiencyRatio = 0;
-  if (questionsAsked >= qMin && questionsAsked <= qMax) questionCountEfficiencyRatio = 1;
-  else if (questionsAsked < qMin && qMin > 0) questionCountEfficiencyRatio = questionsAsked / qMin;
-  else if (questionsAsked > qMax) {
-    const span = Math.max(qMax - qMin, 1);
-    const excess = questionsAsked - qMax;
-    questionCountEfficiencyRatio = clamp(1 - excess / span, 0, 1);
-  }
-
   const breakdown: ScoreCaseBreakdown = {
     diagnosisOutOf30: diag.points,
-    symptomsOutOf15,
-    extraInfoOutOf10,
-    questionQualityOutOf15,
+    symptomsOutOf15: symptoms.points,
+    extraInfoOutOf10: extra.points,
+    questionQualityOutOf15: questions.qualityPoints,
     efficiencyOutOf10,
     behavioralOutOf20: behavioralScore,
   };
@@ -314,24 +389,31 @@ export function scoreCase(
     0,
     MAX_CLINICAL,
   );
-
   const totalScore = clamp(clinicalScore + behavioralScore, 0, 100);
 
   const metrics: ScoreCaseMetrics = {
     diagnosisMatched: diag.matched,
     timeTakenSec: run.timeTakenSec,
-    questionsAsked,
-    usefulQuestions: useful,
-    symptomRatio,
-    keySymptomsFound: keyFound,
-    keySymptomsTotal: keyTotal,
-    extraInfoRatio,
-    helpfulExtraFound: extraFound,
-    helpfulExtraTotal: extraTotal,
-    questionYield,
-    questionYieldRaw,
-    timeEfficiencyRatio,
-    questionCountEfficiencyRatio,
+    questionsAsked: questions.questionsAsked,
+    usefulQuestions: questions.useful,
+    symptomRatio: symptoms.ratio,
+    keySymptomsFound: symptoms.found,
+    keySymptomsTotal: symptoms.total,
+    extraInfoRatio: extra.ratio,
+    helpfulExtraFound: extra.found,
+    helpfulExtraTotal: extra.total,
+    questionYield: questions.questionYield,
+    questionYieldRaw: questions.questionYieldRaw,
+    timeEfficiencyRatio: computeTimeEfficiencyRatio(
+      run.timeTakenSec,
+      rubric.targetTimeSec,
+      rubric.maxTimeSec,
+    ),
+    questionCountEfficiencyRatio: computeQuestionCountEfficiencyRatio(
+      questions.questionsAsked,
+      rubric.idealQuestionCountMin,
+      rubric.idealQuestionCountMax,
+    ),
   };
 
   const feedback =

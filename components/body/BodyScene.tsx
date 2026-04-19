@@ -30,11 +30,6 @@ type Props = {
   pulseTargets?: readonly ExamTarget[];
   /** Per-avatar hotspot tuning — curated cases pass their slug; sim omits for `default`. */
   layoutPreset?: BodyLayoutPresetId;
-  /**
-   * Curated flows often hide overlapping 3D clip spheres and drive selection from the legend only.
-   * @default true
-   */
-  showHotspots?: boolean;
 };
 
 function mapRegionToIntent(region: ExamTarget): ExamIntent {
@@ -46,7 +41,6 @@ export function BodyScene({
   modelSrc,
   pulseTargets,
   layoutPreset = "default",
-  showHotspots = true,
 }: Props) {
   const highlight = useSimUiStore((s) => s.bodyHighlight);
   const pulse = useCallback(
@@ -64,9 +58,9 @@ export function BodyScene({
   }, []);
 
   const hotspotLayout = useMemo(() => {
-    if (!showHotspots || !bounds) return null;
+    if (!bounds) return null;
     return computeHotspotLayout(bounds, layoutPreset);
-  }, [bounds, layoutPreset, showHotspots]);
+  }, [bounds, layoutPreset]);
 
   return (
     <div className="relative h-full min-h-[420px] w-full overflow-hidden">
@@ -81,11 +75,7 @@ export function BodyScene({
       />
 
       <div className="pointer-events-none absolute right-3 top-3 z-10">
-        <BodyLegend
-          highlight={highlight}
-          onRegionSelect={handleSelect}
-          pulseTargets={pulseTargets}
-        />
+        <BodyLegend highlight={highlight} />
       </div>
 
       <div className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-full border border-white/[0.10] bg-white/[0.06] px-2.5 py-1 text-[10px] text-white/70 backdrop-blur">
@@ -95,7 +85,7 @@ export function BodyScene({
       </div>
 
       <Canvas
-        camera={{ position: [0, 0.4, 7], fov: 35 }}
+        camera={{ position: [0, 0.72, 7], fov: 35 }}
         gl={{
           alpha: false,
           // AgX tends to preserve color better than ACES on stylized / game assets.
@@ -140,10 +130,11 @@ export function BodyScene({
         {/* useGLTF + Environment suspend — isolated so lights/camera stay stable */}
         <Suspense fallback={null}>
           <Environment preset="sunset" environmentIntensity={1.35} />
-          <group position={[0, 0.8, 0]}>
+          {/* Lift rig so head/torso sit higher in the viewport (Maria + Jason + sim). */}
+          <group position={[0,.5, 0]}>
             <BodyModel
               modelSrc={modelSrc}
-              onBoundsChange={showHotspots ? handleBoundsChange : undefined}
+              onBoundsChange={handleBoundsChange}
             />
             {hotspotLayout ? (
               <>
@@ -251,7 +242,7 @@ export function BodyScene({
         </Suspense>
         <OrbitControls
           enablePan={false}
-          target={[0, 1.48, 0]}
+          target={[0, 1.32, 0]}
           minDistance={5.5}
           maxDistance={8}
           enableDamping

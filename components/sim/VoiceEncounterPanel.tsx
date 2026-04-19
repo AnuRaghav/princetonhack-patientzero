@@ -13,6 +13,15 @@ type Props = {
   disabled?: boolean;
 };
 
+type ConversePayload = {
+  error?: string;
+  patient?: { id?: string; firstName?: string; lastName?: string };
+  patientId?: string;
+  responseText?: string;
+  audioUrl?: string | null;
+  ttsError?: string;
+};
+
 function getSpeechRecognition(): SpeechRecognitionConstructor | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as {
@@ -20,6 +29,53 @@ function getSpeechRecognition(): SpeechRecognitionConstructor | null {
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+async function postConverse(
+  patientId: string | undefined,
+  transcript: string,
+  history: { role: string; text: string }[],
+): Promise<{ res: Response; payload: ConversePayload }> {
+  const res = await fetch("/api/patient/converse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      patientId,
+      transcript,
+      history,
+      synthesizeAudio: true,
+      includePatientCase: false,
+    }),
+  });
+  const payload = (await res.json()) as ConversePayload;
+  return { res, payload };
+}
+
+function derivePatientLabel(payload: ConversePayload): string | null {
+  const p = payload.patient;
+  if (!p) return null;
+  const name = `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
+  if (name) return name;
+  return payload.patientId ? payload.patientId.slice(0, 12) : null;
+}
+
+function playReplyAudio(
+  url: string,
+  audioEl: HTMLAudioElement,
+  audioObjectUrlRef: { current: string | null },
+): void {
+  if (audioObjectUrlRef.current) {
+    URL.revokeObjectURL(audioObjectUrlRef.current);
+    audioObjectUrlRef.current = null;
+  }
+  if (url.startsWith("data:")) {
+    const blobUrl = attachDataUrlToAudioElement(url, audioEl);
+    if (blobUrl) audioObjectUrlRef.current = blobUrl;
+    return;
+  }
+  audioEl.src = url;
+  audioEl.load();
+  void audioEl.play().catch(() => {});
 }
 
 export function VoiceEncounterPanel({ patientId, disabled }: Props) {
@@ -53,46 +109,19 @@ export function VoiceEncounterPanel({ patientId, disabled }: Props) {
       setBanner(null);
       setLastAudioUrl(null);
 
-      const history = turns.flatMap((t) => ({
-        role: t.role,
-        text: t.text,
-      }));
+      const history = turns.flatMap((t) => ({ role: t.role, text: t.text }));
 
       try {
-        const res = await fetch("/api/patient/converse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            patientId,
-            transcript: trimmed,
-            history,
-            synthesizeAudio: true,
-            includePatientCase: false,
-          }),
-        });
-
-        const payload = (await res.json()) as {
-          error?: string;
-          patient?: { id?: string; firstName?: string; lastName?: string };
-          patientId?: string;
-          responseText?: string;
-          audioUrl?: string | null;
-          ttsError?: string;
-        };
+        const { res, payload } = await postConverse(patientId, trimmed, history);
 
         if (!res.ok) {
           throw new Error(payload.error ?? "Conversation request failed");
         }
 
-        if (payload.ttsError) {
-          setBanner(payload.ttsError);
-        }
+        if (payload.ttsError) setBanner(payload.ttsError);
 
-        const p = payload.patient;
-        if (p) {
-          const name = `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim();
-          setPatientLabel(name || (payload.patientId ? payload.patientId.slice(0, 12) : null));
-        }
+        const label = derivePatientLabel(payload);
+        if (label !== null) setPatientLabel(label);
 
         setTurns((prev) => [
           ...prev,
@@ -104,20 +133,7 @@ export function VoiceEncounterPanel({ patientId, disabled }: Props) {
         const url = payload.audioUrl ?? null;
         setLastAudioUrl(url);
         const audioEl = audioRef.current;
-        if (url && audioEl) {
-          if (audioObjectUrlRef.current) {
-            URL.revokeObjectURL(audioObjectUrlRef.current);
-            audioObjectUrlRef.current = null;
-          }
-          if (url.startsWith("data:")) {
-            const blobUrl = attachDataUrlToAudioElement(url, audioEl);
-            if (blobUrl) audioObjectUrlRef.current = blobUrl;
-          } else {
-            audioEl.src = url;
-            audioEl.load();
-            void audioEl.play().catch(() => {});
-          }
-        }
+        if (url && audioEl) playReplyAudio(url, audioEl, audioObjectUrlRef);
       } catch (e) {
         setBanner(e instanceof Error ? e.message : "Request failed");
       } finally {

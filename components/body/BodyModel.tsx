@@ -5,6 +5,7 @@ import { useGLTF } from "@react-three/drei";
 import {
   Box3,
   Color,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
@@ -19,6 +20,33 @@ import {
   type Group,
   type Material,
 } from "three";
+
+/** World-space AABB → axis-aligned box in `parent` local space (matches sibling hotspot coordinates). */
+function worldBoundsToParentLocal(box: Box3, parent: Group): ModelBounds {
+  parent.updateWorldMatrix(true, true);
+  const inv = new Matrix4().copy(parent.matrixWorld).invert();
+  const lb = new Box3();
+  const corners: [number, number, number][] = [
+    [box.min.x, box.min.y, box.min.z],
+    [box.max.x, box.min.y, box.min.z],
+    [box.min.x, box.max.y, box.min.z],
+    [box.min.x, box.min.y, box.max.z],
+    [box.max.x, box.max.y, box.min.z],
+    [box.max.x, box.min.y, box.max.z],
+    [box.min.x, box.max.y, box.max.z],
+    [box.max.x, box.max.y, box.max.z],
+  ];
+  for (const [x, y, z] of corners) {
+    lb.expandByPoint(new Vector3(x, y, z).applyMatrix4(inv));
+  }
+  const size = new Vector3();
+  lb.getSize(size);
+  return {
+    min: [lb.min.x, lb.min.y, lb.min.z],
+    max: [lb.max.x, lb.max.y, lb.max.z],
+    size: [size.x, size.y, size.z],
+  };
+}
 
 /** Tag diffuse-family maps so they decode as sRGB (fixes muddy / gray albedo). */
 function setSRGBTexture(tex: Texture | null | undefined) {
@@ -129,14 +157,19 @@ export function BodyModel({ modelSrc = DEFAULT_MODEL_SRC, onBoundsChange }: Prop
     root.updateWorldMatrix(true, true);
 
     if (!onBoundsChange) return;
-    const box = new Box3().setFromObject(root);
-    const size = new Vector3();
-    box.getSize(size);
-    onBoundsChange({
-      min: [box.min.x, box.min.y, box.min.z],
-      max: [box.max.x, box.max.y, box.max.z],
-      size: [size.x, size.y, size.z],
-    });
+    const worldBox = new Box3().setFromObject(root);
+    const parent = root.parent as Group | null;
+    const payload =
+      parent != null ? worldBoundsToParentLocal(worldBox, parent) : (() => {
+        const size = new Vector3();
+        worldBox.getSize(size);
+        return {
+          min: [worldBox.min.x, worldBox.min.y, worldBox.min.z] as [number, number, number],
+          max: [worldBox.max.x, worldBox.max.y, worldBox.max.z] as [number, number, number],
+          size: [size.x, size.y, size.z] as [number, number, number],
+        };
+      })();
+    onBoundsChange(payload);
   }, [onBoundsChange, modelSrc, scene]);
 
   return (

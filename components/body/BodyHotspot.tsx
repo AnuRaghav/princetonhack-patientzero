@@ -16,6 +16,35 @@ type Props = {
   onSelect: (id: ExamTarget) => void;
 };
 
+type VisualState = "pulse" | "selected" | "hovered" | "idle";
+
+function resolveVisualState(
+  pulse: boolean | undefined,
+  selected: boolean | undefined,
+  hovered: boolean,
+): VisualState {
+  if (pulse) return "pulse";
+  if (selected) return "selected";
+  if (hovered) return "hovered";
+  return "idle";
+}
+
+const VISUAL_STYLES: Record<
+  VisualState,
+  { opacity: number; scale: number; emissiveIntensity: number }
+> = {
+  pulse: { opacity: 0.95, scale: 1.22, emissiveIntensity: 0.95 },
+  selected: { opacity: 0.88, scale: 1.16, emissiveIntensity: 0.75 },
+  hovered: { opacity: 0.4, scale: 1.06, emissiveIntensity: 0.24 },
+  idle: { opacity: 0.4, scale: 1, emissiveIntensity: 0.04 },
+};
+
+function resolveEmissive(state: VisualState, color: string): string {
+  if (state === "pulse") return "#fcd34d";
+  if (state === "selected" || state === "hovered") return color;
+  return "#000000";
+}
+
 export function BodyHotspot({
   id,
   position,
@@ -26,13 +55,9 @@ export function BodyHotspot({
   onSelect,
 }: Props) {
   const [hovered, setHovered] = useState(false);
-  const emissive = useMemo(() => {
-    if (pulse) return "#fcd34d";
-    if (selected || hovered) return color;
-    return "#000000";
-  }, [color, hovered, pulse, selected]);
-  const opacity = pulse ? 0.95 : selected ? 0.88 : hovered ? 0.4 : 0.4;
-  const scale = pulse ? 1.22 : selected ? 1.16 : hovered ? 1.06 : 1;
+  const state = resolveVisualState(pulse, selected, hovered);
+  const emissive = useMemo(() => resolveEmissive(state, color), [state, color]);
+  const { opacity, scale, emissiveIntensity } = VISUAL_STYLES[state];
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -60,7 +85,7 @@ export function BodyHotspot({
         transparent
         opacity={opacity}
         emissive={emissive}
-        emissiveIntensity={pulse ? 0.95 : selected ? 0.75 : hovered ? 0.24 : 0.04}
+        emissiveIntensity={emissiveIntensity}
         depthWrite={false}
       />
     </mesh>

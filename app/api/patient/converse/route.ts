@@ -8,6 +8,31 @@ import { loadPatientCaseForVoice } from "@/lib/synthea/patientCaseBuilder";
 import { resolveCuratedVoiceId } from "@/lib/voice/curatedVoiceMap";
 import { elevenLabsTtsWithDiagnostics } from "@/lib/voice/elevenlabs";
 
+type GeminiErrorResult = Extract<Awaited<ReturnType<typeof geminiPatientReply>>, { ok: false }>;
+
+function mapGeminiErrorStatus(gemini: GeminiErrorResult): number {
+  if (gemini.status === 429) return 429;
+  if (gemini.status === 401 || gemini.status === 403) return gemini.status;
+  return 503;
+}
+
+function toPriorTurns(history: { role: string; text: string }[] | undefined): ConversationTurn[] {
+  return (history ?? []).map((h) => ({
+    role: h.role === "user" ? "user" : "patient",
+    text: h.text,
+  }));
+}
+
+async function synthesizeAudioForReply(
+  patientId: string,
+  responseText: string,
+): Promise<{ audioUrl: string | null; ttsError?: string }> {
+  const voiceId = resolveCuratedVoiceId(patientId);
+  const tts = await elevenLabsTtsWithDiagnostics(responseText, voiceId);
+  const ttsError = !tts.audioUrl && tts.error ? tts.error : undefined;
+  return { audioUrl: tts.audioUrl, ttsError };
+}
+
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
   const parsed = PatientConverseRequestSchema.safeParse(json);
@@ -29,36 +54,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const systemInstruction = buildPatientVoiceSystemPrompt(loaded.snapshot);
-
-    const priorTurns: ConversationTurn[] = (history ?? []).map((h) => ({
-      role: h.role === "user" ? "user" : "patient",
-      text: h.text,
-    }));
-
     const gemini = await geminiPatientReply({
-      systemInstruction,
-      priorTurns,
+      systemInstruction: buildPatientVoiceSystemPrompt(loaded.snapshot),
+      priorTurns: toPriorTurns(history),
       clinicianUtterance: transcript,
     });
 
     if (!gemini.ok) {
-      const status =
-        gemini.status === 429 ? 429 : gemini.status === 401 || gemini.status === 403 ? gemini.status : 503;
-      return NextResponse.json({ error: gemini.message }, { status });
+      return NextResponse.json({ error: gemini.message }, { status: mapGeminiErrorStatus(gemini) });
     }
 
     const responseText = gemini.text;
-
-    let audioUrl: string | null = null;
-    let ttsError: string | undefined;
-    const wantAudio = synthesizeAudio !== false;
-    if (wantAudio) {
-      const voiceId = resolveCuratedVoiceId(patientId);
-      const tts = await elevenLabsTtsWithDiagnostics(responseText, voiceId);
-      audioUrl = tts.audioUrl;
-      if (!tts.audioUrl && tts.error) ttsError = tts.error;
-    }
+    const { audioUrl, ttsError } =
+      synthesizeAudio !== false
+        ? await synthesizeAudioForReply(patientId, responseText)
+        : { audioUrl: null as string | null, ttsError: undefined };
 
     const p = loaded.snapshot.patient;
     const body = PatientConverseResponseSchema.parse({

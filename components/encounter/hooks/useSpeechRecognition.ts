@@ -139,17 +139,11 @@ export function useSpeechRecognition(
 
     let finalAccum = "";
     rec.onresult = (ev) => {
-      let interimText = "";
-      let newFinalText = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
-        const result = ev.results[i];
-        if (!result) continue;
-        const piece = result[0]?.transcript ?? "";
-        if (result.isFinal) newFinalText += piece;
-        else interimText += piece;
+      const { interimText, newFinalText } = extractResultSegments(ev);
+      if (newFinalText) {
+        finalAccum = appendFinal(finalAccum, newFinalText);
       }
-      if (newFinalText) finalAccum += (finalAccum ? " " : "") + newFinalText.trim();
-      const combined = `${finalAccum}${interimText ? ` ${interimText}` : ""}`.trim();
+      const combined = combineTranscript(finalAccum, interimText);
       if (combined) {
         callbacksRef.current.onTranscript?.(combined, {
           isFinal: newFinalText.length > 0 && interimText.length === 0,
@@ -158,17 +152,11 @@ export function useSpeechRecognition(
       // When a final segment arrives and the speaker has stopped (no interim
       // tail), commit and close the mic. This gives a "press once, speak,
       // pause, send" rhythm without forcing the user to tap Stop.
-      if (newFinalText && !interimText) {
-        const toCommit = finalAccum.trim();
-        if (toCommit) {
-          callbacksRef.current.onFinal?.(toCommit);
-          finalAccum = "";
-          try {
-            rec.stop();
-          } catch {
-            /* ignore */
-          }
-        }
+      const shouldCommit = Boolean(newFinalText) && !interimText && finalAccum.trim().length > 0;
+      if (shouldCommit) {
+        callbacksRef.current.onFinal?.(finalAccum.trim());
+        finalAccum = "";
+        safeStop(rec);
       }
     };
 
@@ -211,6 +199,41 @@ export function useSpeechRecognition(
   }, []);
 
   return { isSupported, isListening, start, stop, abort };
+}
+
+function extractResultSegments(ev: SpeechRecognitionEventLike): {
+  interimText: string;
+  newFinalText: string;
+} {
+  let interimText = "";
+  let newFinalText = "";
+  for (let i = ev.resultIndex; i < ev.results.length; i++) {
+    const result = ev.results[i];
+    if (!result) continue;
+    const piece = result[0]?.transcript ?? "";
+    if (result.isFinal) newFinalText += piece;
+    else interimText += piece;
+  }
+  return { interimText, newFinalText };
+}
+
+function appendFinal(accum: string, addition: string): string {
+  const trimmed = addition.trim();
+  if (!trimmed) return accum;
+  return accum ? `${accum} ${trimmed}` : trimmed;
+}
+
+function combineTranscript(finalAccum: string, interimText: string): string {
+  const tail = interimText ? ` ${interimText}` : "";
+  return `${finalAccum}${tail}`.trim();
+}
+
+function safeStop(rec: MinimalSpeechRecognition): void {
+  try {
+    rec.stop();
+  } catch {
+    /* ignore */
+  }
 }
 
 function humanizeSpeechError(code: string): string {
