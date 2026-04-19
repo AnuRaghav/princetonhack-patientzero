@@ -87,7 +87,7 @@ export function getVertexLocation(): string {
 }
 
 /**
- * Model id for `generateContent` URL. Override with `GEMINI_CONVERSATION_MODEL` or `GEMINI_MODEL`.
+ * Model id for `generateContent` URL (AI Studio and Vertex). Override with `GEMINI_CONVERSATION_MODEL` or `GEMINI_MODEL`.
  */
 export function getGeminiGenerateModelId(): string {
   const fromEnv =
@@ -97,7 +97,7 @@ export function getGeminiGenerateModelId(): string {
 }
 
 /**
- * AI Studio / Generative Language API key (`?key=`). Not used when Vertex project is configured.
+ * Google AI Studio / Generative Language API key (`?key=`). Takes precedence over Vertex when set.
  */
 export function getGeminiApiKey(): string | null {
   const k =
@@ -107,9 +107,9 @@ export function getGeminiApiKey(): string | null {
   return k || null;
 }
 
-/** True if Vertex (project + ADC) or AI Studio (API key) can run a request. */
+/** True if AI Studio (API key) or Vertex (project + ADC) can run a request. API key preferred at runtime when set. */
 export function isGeminiConfigured(): boolean {
-  return Boolean(getVertexProjectId() || getGeminiApiKey());
+  return Boolean(getGeminiApiKey() || getVertexProjectId());
 }
 
 function buildGeminiGeneratePayload(args: {
@@ -166,7 +166,7 @@ function resultFromHttpFailure(
     message:
       googleMsg ??
       (status === 429
-        ? "Gemini rate limit or quota exceeded (HTTP 429). Adjust Vertex quotas, model, or wait — see server logs."
+        ? "Gemini rate limit or quota exceeded (HTTP 429). Check AI Studio limits, model, or wait — see server logs."
         : `Gemini API error (HTTP ${status}).`),
   };
 }
@@ -285,12 +285,13 @@ async function postGeminiVertexGenerateContent(args: {
 
 /**
  * Gemini `generateContent`:
- * - **Vertex AI** when `GEMINI_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `GCP_PROJECT` is set — uses
- *   Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` → service account JSON path).
- * - Otherwise **Google AI Studio** (`GEMINI_API_KEY` + generativelanguage.googleapis.com).
+ * - **Google AI (API key)** first — `GEMINI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, or `GEMMA_API_KEY`
+ *   → `generativelanguage.googleapis.com` (same payload as before).
+ * - **Vertex AI** only if no API key is set but `GEMINI_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `GCP_PROJECT`
+ *   is set — uses Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS`).
  */
 export async function postGeminiGenerateContent(args: {
-  /** Ignored when Vertex project env is set; otherwise required unless key is only in env. */
+  /** Overrides env; used with AI Studio when set. */
   apiKey?: string | null;
   /** Overrides env default for this request only. */
   modelId?: string;
@@ -309,6 +310,15 @@ export async function postGeminiGenerateContent(args: {
     generationConfig: args.generationConfig,
   });
 
+  const apiKey = args.apiKey?.trim() || getGeminiApiKey();
+  if (apiKey) {
+    return postGeminiAiStudioGenerateContent({
+      apiKey,
+      modelId,
+      payload,
+    });
+  }
+
   const project = getVertexProjectId();
   if (project) {
     const location = getVertexLocation();
@@ -320,18 +330,9 @@ export async function postGeminiGenerateContent(args: {
     });
   }
 
-  const apiKey = args.apiKey?.trim() || getGeminiApiKey();
-  if (!apiKey) {
-    return {
-      ok: false,
-      message:
-        "No Gemini credentials: for Vertex AI set GEMINI_VERTEX_PROJECT (or GOOGLE_CLOUD_PROJECT) and GOOGLE_APPLICATION_CREDENTIALS to your service account JSON; for AI Studio set GEMINI_API_KEY.",
-    };
-  }
-
-  return postGeminiAiStudioGenerateContent({
-    apiKey,
-    modelId,
-    payload,
-  });
+  return {
+    ok: false,
+    message:
+      "No Gemini credentials: set GEMINI_API_KEY (Google AI Studio), or for Vertex AI set GEMINI_VERTEX_PROJECT (or GOOGLE_CLOUD_PROJECT) and GOOGLE_APPLICATION_CREDENTIALS.",
+  };
 }

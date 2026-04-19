@@ -3,7 +3,7 @@ import "server-only";
 import { getGeminiApiKey, isGeminiConfigured, postGeminiGenerateContent } from "./geminiRest";
 
 /**
- * Credentials for `generateContent`: AI Studio (`GEMINI_API_KEY`) or Vertex (project + ADC; apiKey null).
+ * Resolves `GEMINI_API_KEY` for logging/bridging; `postGeminiGenerateContent` uses the key first, else Vertex.
  */
 export function getGoogleGenAiCredentials(): { apiKey: string | null } | null {
   if (!isGeminiConfigured()) return null;

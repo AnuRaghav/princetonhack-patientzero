@@ -29,7 +29,7 @@ export async function geminiPatientReply(args: {
     return {
       ok: false,
       message:
-        "Missing Gemini credentials: use Vertex (`GEMINI_VERTEX_PROJECT` or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_APPLICATION_CREDENTIALS` → service account JSON), or AI Studio (`GEMINI_API_KEY`). Restart the dev server after editing env.",
+        "Missing Gemini credentials: set GEMINI_API_KEY (Google AI Studio). Optional: GEMINI_MODEL / GEMINI_CONVERSATION_MODEL. Restart the dev server after editing env.",
     };
   }
 

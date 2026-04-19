@@ -16,11 +16,17 @@ const REGIONS: { id: ExamTarget; label: string; hint: string }[] = [
 
 type Props = {
   highlight?: string | null;
+  /** When set, each row is clickable to select that body region (same as 3D hotspots when shown). */
+  onRegionSelect?: (id: ExamTarget) => void;
+  /** Regions to briefly emphasize (e.g. new symptom → related area). */
+  pulseTargets?: readonly ExamTarget[];
 };
 
-export function BodyLegend({ highlight }: Props) {
+export function BodyLegend({ highlight, onRegionSelect, pulseTargets }: Props) {
+  const interactive = Boolean(onRegionSelect);
+
   return (
-    <div className="rounded-[var(--radius-md)] border border-white/[0.08] bg-white/[0.04] p-3 text-[12px] text-white backdrop-blur-md">
+    <div className="pointer-events-auto rounded-[var(--radius-md)] border border-white/[0.08] bg-white/[0.04] p-3 text-[12px] text-white backdrop-blur-md">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="text-[11px] font-semibold text-white">Regions</div>
         <span className="num text-[10px] text-white/40">
@@ -30,21 +36,23 @@ export function BodyLegend({ highlight }: Props) {
       <ul className="flex flex-col gap-1">
         {REGIONS.map((r) => {
           const active = highlight === r.id;
-          return (
-            <li
-              key={r.id}
-              className={cn(
-                "flex items-center justify-between gap-3 rounded-full px-2.5 py-1 smooth",
-                active
-                  ? "bg-white text-[var(--color-ink)]"
-                  : "text-white/70 hover:bg-white/[0.05] hover:text-white",
-              )}
-            >
+          const pulse = pulseTargets?.includes(r.id) ?? false;
+          const rowClass = cn(
+            "flex w-full items-center justify-between gap-3 rounded-full px-2.5 py-1 smooth",
+            active
+              ? "bg-white text-[var(--color-ink)]"
+              : "text-white/70 hover:bg-white/[0.05] hover:text-white",
+            interactive && !active && "cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/35",
+            pulse && "ring-2 ring-amber-400/60 ring-offset-2 ring-offset-black/30",
+          );
+
+          const inner = (
+            <>
               <span className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    active ? "bg-[var(--color-accent)]" : "bg-white/30",
+                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    active ? "bg-[var(--color-accent)]" : pulse ? "bg-amber-300" : "bg-white/30",
                   )}
                 />
                 <span className="font-medium">{r.label}</span>
@@ -57,6 +65,22 @@ export function BodyLegend({ highlight }: Props) {
               >
                 {r.hint}
               </span>
+            </>
+          );
+
+          if (interactive && onRegionSelect) {
+            return (
+              <li key={r.id}>
+                <button type="button" className={rowClass} onClick={() => onRegionSelect(r.id)}>
+                  {inner}
+                </button>
+              </li>
+            );
+          }
+
+          return (
+            <li key={r.id} className={rowClass}>
+              {inner}
             </li>
           );
         })}

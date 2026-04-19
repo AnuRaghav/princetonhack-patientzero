@@ -95,7 +95,7 @@ export function CuratedInterviewFindings({
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <span className="truncate text-[13px] font-semibold text-white">
-              {regionLabel ? "Symptoms · this region" : "Symptoms · pick a hotspot"}
+              {regionLabel ? "Symptoms · this region" : "Symptoms · pick a body region"}
             </span>
             <Badge tone="dark" size="xs">
               interview
@@ -117,13 +117,14 @@ export function CuratedInterviewFindings({
           </p>
         ) : !selected ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
-            Click a colored hotspot on the 3D model. Surfaced symptoms from the dialogue that belong to
-            that body area appear here — other regions stay empty until they have matching clues.
+            Use the Regions list on the 3D preview to select where to review interview findings.
+            Symptoms from the dialogue that belong to that body area appear here — other regions stay empty
+            until they have matching clues.
           </p>
         ) : rows.length === 0 ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
             No interview findings mapped to this area yet. Keep asking questions, or try another
-            hotspot — for example stomach vs head can show different clues for the same case.
+            region — for example stomach vs head can show different clues for the same case.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">

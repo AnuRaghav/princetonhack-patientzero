@@ -26,6 +26,7 @@ Copy `.env.example` to `.env.local` and fill values:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (used by browser helpers; MVP UI talks to Route Handlers only)
 - `SUPABASE_SERVICE_ROLE_KEY` (**server only** — Route Handlers insert/update session tables)
 - `OPENAI_API_KEY` (optional — without it, patient + debrief copy uses deterministic templates)
+- `GEMINI_API_KEY` (Google AI Studio — Gemini patient voice / conversation; takes precedence over Vertex if `GOOGLE_CLOUD_PROJECT` is also set)
 
 ## Database setup
 

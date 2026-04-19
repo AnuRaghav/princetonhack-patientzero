@@ -108,7 +108,10 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
 
   const handleNewSymptomDiscovered = useCallback((payload: NewSymptomDiscoveredPayload) => {
-    setSymptomPulseTargets(mapSymptomRegionsToHotspots(payload.regions));
+    const mapped = mapSymptomRegionsToHotspots(payload.regions);
+    setSymptomPulseTargets([
+      ...new Set<ExamTarget>([...mapped, ...payload.regions]),
+    ]);
     setSymptomToast({ id: Date.now(), labels: payload.labels });
     if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -302,6 +305,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
                 modelSrc={CURATED_BODY_MODEL[slug]}
                 layoutPreset={slug}
                 pulseTargets={symptomPulseTargets}
+                showHotspots={false}
                 onExam={(intent) => {
                   setBodyHighlight(intent.target);
                 }}
