@@ -7,7 +7,7 @@ import { Button, Icon, Surface } from "@/components/ui";
 type Props = {
   open: boolean;
   caseTitle: string;
-  /** When true the dialog locks input and shows the K2 behavioral scoring spinner. */
+  /** When true the dialog locks input and shows the behavioral scoring spinner. */
   scoring?: boolean;
   onCancel: () => void;
   onSubmit: (diagnosis: string) => void;
@@ -53,7 +53,7 @@ export function ChallengeFinishDialog({ open, caseTitle, scoring = false, onCanc
             </h2>
             <p className="text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
               Case: <span className="font-medium text-[var(--color-ink)]">{caseTitle}</span>. Enter your working
-              diagnosis in plain language — the debrief shows your score out of 100 plus strengths and improvement
+              diagnosis in plain language - the debrief shows your score out of 100 plus strengths and improvement
               ideas.
             </p>
           </div>
@@ -61,7 +61,7 @@ export function ChallengeFinishDialog({ open, caseTitle, scoring = false, onCanc
           <textarea
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="e.g. viral conjunctivitis — or your best single-line impression"
+            placeholder="e.g. viral conjunctivitis - or your best single-line impression"
             rows={4}
             disabled={scoring}
             className="w-full resize-y rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3 text-[14px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none focus:border-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
@@ -74,7 +74,7 @@ export function ChallengeFinishDialog({ open, caseTitle, scoring = false, onCanc
               aria-live="polite"
             >
               <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-line)] border-t-[var(--color-accent)]" />
-              Scoring interview behaviors with K2 Think… this only takes a moment.
+              Scoring interview behaviors... this only takes a moment.
             </div>
           ) : null}
 
@@ -90,7 +90,7 @@ export function ChallengeFinishDialog({ open, caseTitle, scoring = false, onCanc
               disabled={!diagnosis.trim() || scoring}
               onClick={handleSubmit}
             >
-              {scoring ? "Scoring…" : "Submit & see debrief"}
+              {scoring ? "Scoring..." : "Submit & see debrief"}
             </Button>
           </div>
         </div>

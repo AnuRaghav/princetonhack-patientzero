@@ -147,7 +147,7 @@ function resultFromHttpFailure(
     message:
       googleMsg ??
       (status === 429
-        ? "Gemini rate limit or quota exceeded (HTTP 429). Check AI Studio limits, model, or wait — see server logs."
+        ? "Gemini rate limit or quota exceeded (HTTP 429). Check AI Studio limits, model, or wait - see server logs."
         : `Gemini API error (HTTP ${status}).`),
   };
 }

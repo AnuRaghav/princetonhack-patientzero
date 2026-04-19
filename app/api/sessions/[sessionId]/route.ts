@@ -43,7 +43,7 @@ export async function GET(_req: Request, ctx: RouteParams) {
       diagnosisHypotheses: sessionRow.diagnosis_hypotheses,
     });
   } catch {
-    // case file missing — return whatever was persisted.
+    // case file missing - return whatever was persisted.
   }
 
   return NextResponse.json({

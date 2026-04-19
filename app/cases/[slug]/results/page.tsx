@@ -17,6 +17,7 @@ import {
   type BehavioralRubricKey,
 } from "@/lib/curated/behavioralScore";
 import type { ScoreCaseResult } from "@/lib/curated/scoreCase";
+import { useSimUiStore } from "@/lib/store/simUiStore";
 
 function formatElapsed(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -49,8 +50,14 @@ export default function CuratedChallengeResultsPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const slugParam = typeof params.slug === "string" ? params.slug : "";
+  const setActiveNavOverride = useSimUiStore((s) => s.setActiveNavOverride);
 
   const [payload, setPayload] = useState<CuratedChallengeResultV1 | null>(null);
+
+  useEffect(() => {
+    setActiveNavOverride("debrief");
+    return () => setActiveNavOverride(null);
+  }, [setActiveNavOverride]);
 
   useEffect(() => {
     if (!slugParam || !isCuratedCaseSlug(slugParam)) {
@@ -241,7 +248,7 @@ export default function CuratedChallengeResultsPage() {
       <Surface variant="card" padding="lg" radius="xl">
         <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">Your diagnosis</h2>
         <p className="mt-2 whitespace-pre-wrap rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3 text-[14px] leading-relaxed text-[var(--color-ink)]">
-          {payload.diagnosisGuess || "—"}
+          {payload.diagnosisGuess || "-"}
         </p>
       </Surface>
 

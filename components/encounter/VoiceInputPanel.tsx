@@ -24,10 +24,10 @@ type Props = {
 
 const STATUS_LABELS: Record<EncounterStatus, string> = {
   idle: "Tap the mic to speak",
-  listening: "Listening…",
-  transcribing: "Transcribing…",
-  thinking: "Patient is thinking…",
-  speaking: "Patient is speaking…",
+  listening: "Listening...",
+  transcribing: "Transcribing...",
+  thinking: "Patient is thinking...",
+  speaking: "Patient is speaking...",
   paused: "Paused",
   error: "Something went wrong",
 };
@@ -82,7 +82,7 @@ function PartialOrHint({
   if (pendingPartial) {
     return (
       <div className="w-full max-w-md rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-[12px] italic text-[var(--color-ink-soft)]">
-        “{pendingPartial}”
+        "{pendingPartial}"
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { SyntheaConditionRow, SyntheaObservationRow } from "./types";
 
 /**
- * Mirrors the user's “latest encounter” logic:
+ * Mirrors the user's "latest encounter" logic:
  * pick the ENCOUNTER from the row with max("DATE") in observations for this patient,
  * then scope conditions + observations to that ENCOUNTER.
  */

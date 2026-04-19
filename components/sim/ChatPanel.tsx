@@ -52,7 +52,7 @@ export function ChatPanel({ disabled, onSend }: Props) {
           disabled={disabled || sending}
           className="rounded border-[var(--color-line-strong)]"
         />
-        Voice reply (ElevenLabs) — requires API key on server
+        Voice reply (ElevenLabs) - requires API key on server
       </label>
 
       <div className="flex flex-wrap gap-1.5">
@@ -72,7 +72,7 @@ export function ChatPanel({ disabled, onSend }: Props) {
       <div className="relative mt-3">
         <textarea
           className="h-24 w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] p-3 pr-14 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none smooth focus:border-[var(--color-ink)]"
-          placeholder="Ask an open-ended question…"
+          placeholder="Ask an open-ended question..."
           value={text}
           disabled={disabled || sending}
           onChange={(e) => setText(e.target.value)}

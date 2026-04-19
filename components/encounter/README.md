@@ -15,7 +15,7 @@ That's the whole minimum-viable usage. You get:
 - Polished chatbot transcript with bubbles, auto-scroll, typing indicator.
 - ChatGPT-style voice mode with mic button, status caption, live partials, and
   ElevenLabs audio playback.
-- Switching tabs never resets anything — same transcript, same status, same
+- Switching tabs never resets anything - same transcript, same status, same
   pending audio across modes.
 - Persistence to Supabase (when using the `chat` backend).
 - Discovered facts surfaced via callback for the 3D avatar / scoring layer.
@@ -30,9 +30,9 @@ This is the most important decision.
 | `backend` | Endpoint | Persistence | Returns | Use when |
 |---|---|---|---|---|
 | `"chat"` *(default)* | `POST /api/chat` | Writes every turn to Supabase via `sessionId` | Reply text **+ revealed facts + findings projection + optional TTS** | Real game session: leaderboard, scoring, fact reveals driving the avatar. **Requires** a row to already exist in `sessions` with this uuid. |
-| `"converse"` | `POST /api/patient/converse` | None — stateless | Reply text + optional TTS | One-off chats, sandboxes, demos, curated case previews. `sessionId` becomes the logical key + fallback patient id. |
+| `"converse"` | `POST /api/patient/converse` | None - stateless | Reply text + optional TTS | One-off chats, sandboxes, demos, curated case previews. `sessionId` becomes the logical key + fallback patient id. |
 
-Only the `chat` backend produces `DiscoveredFact[]` — `converse` always returns
+Only the `chat` backend produces `DiscoveredFact[]` - `converse` always returns
 an empty array.
 
 ---
@@ -126,7 +126,7 @@ type EncounterConversationProps = {
   initialMessages?: EncounterMessage[];    // pre-seed transcript instead of hydrating
   disableHydration?: boolean;              // skip auto-fetch from /api/sessions
   systemPrompt?: string;                   // displayed in collapsible "Patient context"
-  patientContext?: string;                 // ditto — display only for now
+  patientContext?: string;                 // ditto - display only for now
   voiceId?: string;                        // reserved (ElevenLabs voice override)
   voiceSttMode?: "auto" | "browser" | "server";  // default "auto"
   title?: string;                          // panel header (default "Patient encounter")

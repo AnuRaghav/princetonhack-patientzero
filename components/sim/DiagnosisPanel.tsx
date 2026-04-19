@@ -146,7 +146,7 @@ export function DiagnosisPanel({ sessionId, hypotheses, onSubmitted }: Props) {
           <textarea
             value={rationale}
             onChange={(e) => setRationale(e.target.value)}
-            placeholder="Migrating periumbilical → RLQ pain, anorexia, low-grade fever…"
+            placeholder="Migrating periumbilical → RLQ pain, anorexia, low-grade fever..."
             rows={2}
             maxLength={2000}
             disabled={busy}
@@ -187,7 +187,7 @@ export function DiagnosisPanel({ sessionId, hypotheses, onSubmitted }: Props) {
         {ordered.length === 0 ? (
           <div className="dot-bg flex flex-col items-center gap-1 rounded-[var(--radius-md)] border border-dashed border-[var(--color-line-strong)] px-3 py-6 text-center text-[12px] text-[var(--color-ink-muted)]">
             <Icon.Brain size={18} />
-            <span>No hypotheses yet — commit your first guess.</span>
+            <span>No hypotheses yet - commit your first guess.</span>
           </div>
         ) : (
           <ul className="flex flex-col gap-2">

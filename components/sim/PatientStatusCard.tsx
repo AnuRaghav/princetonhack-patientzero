@@ -36,7 +36,7 @@ export function PatientStatusCard({ painLevel, emotionalState }: Props) {
             value={painLevel}
             max={10}
             tone={painTone(painLevel)}
-            label="Pain · 0–10"
+            label="Pain · 0-10"
             trailing={`${painLevel}/10`}
             showThumb
           />

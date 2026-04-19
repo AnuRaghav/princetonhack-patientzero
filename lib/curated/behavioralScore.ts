@@ -62,7 +62,7 @@ export const BEHAVIORAL_RUBRIC: readonly BehavioralRubricItem[] = [
     label: "Hypothesis-driven questions",
     max: 4,
     description:
-      "4 = questions clearly aim to confirm or eliminate diagnoses; 2–3 = some intent, not consistent; 1 = mostly generic questions; 0 = no reasoning pattern.",
+      "4 = questions clearly aim to confirm or eliminate diagnoses; 2-3 = some intent, not consistent; 1 = mostly generic questions; 0 = no reasoning pattern.",
   },
   {
     key: "logicalProgression",
@@ -142,7 +142,7 @@ export function normalizeBehavioralBreakdown(raw: Partial<Record<BehavioralRubri
 
 function rubricSpecForPrompt(): string {
   return BEHAVIORAL_RUBRIC.map(
-    (r) => `- "${r.key}" (${r.label}, 0–${r.max}): ${r.description}`,
+    (r) => `- "${r.key}" (${r.label}, 0-${r.max}): ${r.description}`,
   ).join("\n");
 }
 
@@ -156,7 +156,7 @@ function transcriptForPrompt(transcript: readonly CuratedChallengeTranscriptLine
     .join("\n");
 }
 
-/** Strict JSON schema sketch used in the system prompt — intentionally minimal. */
+/** Strict JSON schema sketch used in the system prompt - intentionally minimal. */
 export function buildBehavioralPrompt(args: {
   transcript: readonly CuratedChallengeTranscriptLine[];
   caseTitle: string;
@@ -169,7 +169,7 @@ export function buildBehavioralPrompt(args: {
   const system = [
     "You are a clinical-skills examiner scoring a medical-student interview.",
     "Score ONLY the clinician's communication and reasoning style based on the rubric.",
-    "Do NOT score whether the diagnosis was correct — that is handled separately.",
+    "Do NOT score whether the diagnosis was correct - that is handled separately.",
     "Return a single JSON object. No markdown, no commentary, no code fences.",
   ].join(" ");
 

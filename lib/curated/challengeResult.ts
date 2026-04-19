@@ -37,7 +37,7 @@ export type CuratedChallengeResultV1 = {
   transcript: CuratedChallengeTranscriptLine[];
   /** Present when saved after scoring integration; older sessions omit this. */
   score?: ScoreCaseResult;
-  /** LLM-derived behavioral rubric (Maria/Jason curated flow). Optional — falls back to 0. */
+  /** LLM-derived behavioral rubric (Maria/Jason curated flow). Optional - falls back to 0. */
   behavioral?: BehavioralScoreResult;
 };
 
@@ -58,7 +58,7 @@ export function buildCuratedChallengeResult(args: {
   caseTitle: string;
   diagnosisGuess: string;
   messages: readonly EncounterMessage[];
-  /** Epoch ms when Start assessment was pressed — all metrics use messages on/after this instant */
+  /** Epoch ms when Start assessment was pressed - all metrics use messages on/after this instant */
   assessmentStartedAt: number;
 }): CuratedChallengeResultV1 {
   const { slug, caseTitle, diagnosisGuess, messages, assessmentStartedAt } = args;

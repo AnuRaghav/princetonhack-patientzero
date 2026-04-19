@@ -7,7 +7,7 @@ export function chiefComplaintToOpeningLine(chiefComplaint: string): string {
   const c = chiefComplaint.trim();
   if (!c) return "I've been worried enough about my symptoms that I wanted to get checked out.";
   const lower = c.toLowerCase();
-  if (/^(i(\s|'|’)?ve|i am|i'm|i’m)\b/.test(lower)) {
+  if (/^(i(\s|'|')?ve|i am|i'm|i'm)\b/.test(lower)) {
     return c.endsWith(".") ? c : `${c}.`;
   }
   const body = c.endsWith(".") ? c.slice(0, -1) : c;
@@ -20,7 +20,7 @@ export function craftChiefConcernReply(caseDoc: CaseDocument): string {
 }
 
 /**
- * Everything Supabase-derived that the patient “knows” — for model grounding only.
+ * Everything Supabase-derived that the patient "knows" - for model grounding only.
  * The simulator still tracks `revealed_facts` for UX; you instruct the model to answer when asked,
  * not to data-dump.
  */
@@ -37,7 +37,7 @@ export function buildFullPatientBackground(caseDoc: CaseDocument): string {
     }
   }
   lines.push("");
-  lines.push("Optional phrases tied to topics (answer naturally when relevant — do not read IDs aloud):");
+  lines.push("Optional phrases tied to topics (answer naturally when relevant - do not read IDs aloud):");
   for (const [key, text] of Object.entries(caseDoc.patient_utterances_by_fact).sort(([a], [b]) =>
     a.localeCompare(b),
   )) {
@@ -49,7 +49,7 @@ export function buildFullPatientBackground(caseDoc: CaseDocument): string {
 
 /**
  * Grounding block for Gemma/OpenAI: full background so the model understands the case;
- * conversation “reveals” are metadata for the app, not a hard wall on what you know.
+ * conversation "reveals" are metadata for the app, not a hard wall on what you know.
  */
 export function buildPatientPromptFacts(caseDoc: CaseDocument, revealedFactKeys: readonly string[]): string {
   const lines: string[] = [];
@@ -64,15 +64,15 @@ export function buildPatientPromptFacts(caseDoc: CaseDocument, revealedFactKeys:
   );
   lines.push("");
   lines.push(
-    "FOLLOW_UPS: If the clinician asks normal questions about your symptoms — where it bothers you, what it feels like, how it comes and goes — answer in plain, everyday language using CHIEF_CONCERN and COMPLETE_CASE_BACKGROUND. Do not refuse with “I don’t know” unless the question is truly unrelated to why you came in.",
+    "FOLLOW_UPS: If the clinician asks normal questions about your symptoms - where it bothers you, what it feels like, how it comes and goes - answer in plain, everyday language using CHIEF_CONCERN and COMPLETE_CASE_BACKGROUND. Do not refuse with 'I don't know' unless the question is truly unrelated to why you came in.",
   );
   lines.push("");
   lines.push(
-    "SESSION_REVEALS (what the simulation has already marked as discussed — stay consistent if you repeat yourself):",
+    "SESSION_REVEALS (what the simulation has already marked as discussed - stay consistent if you repeat yourself):",
   );
   const revealed = revealedFactKeys.filter((k) => caseDoc.patient_utterances_by_fact[k]);
   if (revealed.length === 0) {
-    lines.push("(none recorded yet — first questions are fine.)");
+    lines.push("(none recorded yet - first questions are fine.)");
   } else {
     for (const key of revealed) {
       const line = caseDoc.patient_utterances_by_fact[key];
@@ -81,7 +81,7 @@ export function buildPatientPromptFacts(caseDoc: CaseDocument, revealedFactKeys:
   }
   lines.push("");
   lines.push(
-    "COMPLETE_CASE_BACKGROUND (all facts you hold as this patient — use to answer questions when asked; do not recite this whole block unprompted or list fact keys):",
+    "COMPLETE_CASE_BACKGROUND (all facts you hold as this patient - use to answer questions when asked; do not recite this whole block unprompted or list fact keys):",
   );
   lines.push(buildFullPatientBackground(caseDoc));
   return lines.join("\n");
@@ -126,7 +126,7 @@ export function symptomFollowUpReply(caseDoc: CaseDocument): string {
   return buildSymptomNarrativeUtterance(caseDoc.chief_complaint, caseDoc.history_of_present_illness);
 }
 
-/** Name, age, and similar — always answer in mock fallback. */
+/** Name, age, and similar - always answer in mock fallback. */
 export function looksLikeIdentityOrDemographicsQuestion(studentMessage: string): boolean {
   const m = studentMessage.toLowerCase();
   return (

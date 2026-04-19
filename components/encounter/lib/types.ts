@@ -1,7 +1,7 @@
 /**
  * Public types for the EncounterConversation component family.
  *
- * These are the shared, normalized shapes used by every hook and subcomponent —
+ * These are the shared, normalized shapes used by every hook and subcomponent -
  * regardless of which backend (`/api/chat` or `/api/patient/converse`) is
  * powering the underlying assistant call.
  */
@@ -36,7 +36,7 @@ export type EncounterMessage = {
 export type DiscoveredFactKind = "observation" | "diagnosis" | "other";
 
 export type DiscoveredFact = {
-  /** Stable identifier — for `chat` backend, this is the canonical fact key from the server. */
+  /** Stable identifier - for `chat` backend, this is the canonical fact key from the server. */
   key: string;
   /** Human-readable description of the fact. */
   text: string;
@@ -45,7 +45,7 @@ export type DiscoveredFact = {
   discoveredAt: number;
 };
 
-/** Normalized adapter response — both backends collapse into this shape. */
+/** Normalized adapter response - both backends collapse into this shape. */
 export type NormalizedReply = {
   reply: string;
   audioUrl: string | null;

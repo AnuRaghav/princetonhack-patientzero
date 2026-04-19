@@ -10,14 +10,14 @@ type Props = {
 };
 
 /**
- * Compact actions for stethoscope / BP — paired transcript lines are injected by {@link CuratedCaseShell}.
+ * Compact actions for stethoscope / BP - paired transcript lines are injected by {@link CuratedCaseShell}.
  */
 export function BodyExamToolsPanel({ onPerform }: Props) {
   return (
     <div className="pointer-events-auto w-[min(220px,min(92vw,260px))] rounded-[var(--radius-md)] border border-white/[0.08] bg-white/[0.04] p-3 text-[12px] text-white backdrop-blur-md">
       <div className="mb-2 text-[11px] font-semibold text-white">Vital signs</div>
       <p className="mb-2.5 text-[10px] leading-snug text-white/45">
-        Record to transcript — results appear as structured vitals.
+        Record to transcript - results appear as structured vitals.
       </p>
       <div className="flex flex-col gap-2">
         <button

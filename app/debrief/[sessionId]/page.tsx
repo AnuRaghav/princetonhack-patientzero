@@ -73,7 +73,7 @@ export default function DebriefPage() {
     return (
       <div className="mt-10 flex items-center gap-3 text-[13px] text-[var(--color-ink-muted)]">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-line-strong)] border-t-[var(--color-ink)]" />
-        Generating debrief…
+        Generating debrief...
       </div>
     );
   }

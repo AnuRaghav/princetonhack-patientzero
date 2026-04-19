@@ -15,7 +15,7 @@ export type ConversationTurn = {
 
 /**
  * Patient dialogue via Gemini REST (`generateContent`).
- * Model: `GEMINI_CONVERSATION_MODEL` / `GEMINI_MODEL` or default — see `getGeminiGenerateModelId`.
+ * Model: `GEMINI_CONVERSATION_MODEL` / `GEMINI_MODEL` or default - see `getGeminiGenerateModelId`.
  */
 
 export async function geminiPatientReply(args: {

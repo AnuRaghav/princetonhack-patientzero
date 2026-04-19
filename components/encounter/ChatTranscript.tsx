@@ -48,7 +48,7 @@ export function ChatTranscript({
     >
       {showEmpty ? (
         <div className="flex h-full min-h-[120px] items-center justify-center text-[12px] text-[var(--color-ink-muted)]">
-          No messages yet — start the encounter when you&rsquo;re ready.
+          No messages yet - start the encounter when you&rsquo;re ready.
         </div>
       ) : null}
 
@@ -100,7 +100,7 @@ function Bubble({ message, ghost }: { message: EncounterMessage; ghost?: boolean
           ghost && "opacity-50 italic",
         )}
       >
-        {message.text || (ghost ? "…" : "")}
+        {message.text || (ghost ? "..." : "")}
         {!ghost && message.source === "voice" ? (
           <span
             className={cn(

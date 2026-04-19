@@ -26,7 +26,7 @@ export type UseVoiceConversationArgs = {
 };
 
 export type UseVoiceConversationReturn = {
-  /** Headless audio element ref — render an `<audio>` and bind this ref. */
+  /** Headless audio element ref - render an `<audio>` and bind this ref. */
   audioRef: React.RefObject<HTMLAudioElement | null>;
   /** True when at least one STT transport is usable in this browser. */
   isSupported: boolean;
@@ -46,9 +46,9 @@ export type UseVoiceConversationReturn = {
  *   conversation.pendingAudio → audio playback (useEncounterAudio)
  *
  * STT transports:
- *   - `browser` — Web Speech API. Streams interim text. Requires unrestricted
+ *   - `browser` - Web Speech API. Streams interim text. Requires unrestricted
  *     access to Google's speech servers (blocked on some campus / corp networks).
- *   - `server`  — MediaRecorder → POST /api/voice/stt → ElevenLabs Scribe. No
+ *   - `server`  - MediaRecorder → POST /api/voice/stt → ElevenLabs Scribe. No
  *     interim transcript, but works on any network. Used as auto-fallback when
  *     browser STT reports a `network` error.
  *
@@ -85,7 +85,7 @@ export function useVoiceConversation({
       conversationRef.current.setStatus("speaking");
     },
     onEnded: () => {
-      // Only react if we were actually speaking — audio "ended" events also
+      // Only react if we were actually speaking - audio "ended" events also
       // fire when src is cleared, which happens on interrupt/new turn.
       if (conversationRef.current.status !== "speaking") return;
       const pending = conversationRef.current.pendingAudio;
@@ -134,7 +134,7 @@ export function useVoiceConversation({
         useServerSttRef.current = true;
         conversationRef.current.setError(null);
         // Kick off the server path immediately so the user just sees a brief
-        // "Listening…" beat and keeps talking.
+        // "Listening..." beat and keeps talking.
         void recorder.start();
         return;
       }
@@ -181,7 +181,7 @@ export function useVoiceConversation({
         // Going through setPartial → commitPartial would race React's render
         // cycle (commitPartial would read a stale empty partial in this
         // microtask) and silently no-op, leaving the user stuck on
-        // "Transcribing…".
+        // "Transcribing...".
         conversationRef.current.clearPartial();
         await conversationRef.current.sendMessage(transcript, {
           source: "voice",

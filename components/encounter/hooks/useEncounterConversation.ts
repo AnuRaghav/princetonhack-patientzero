@@ -82,7 +82,7 @@ const TERMINAL_STATUSES: ReadonlySet<EncounterStatus> = new Set([
 ]);
 
 /**
- * Single source of truth for an encounter — owns transcript, discovered facts,
+ * Single source of truth for an encounter - owns transcript, discovered facts,
  * status state machine, in-flight guards, and host callbacks. Mode-specific
  * orchestration (STT, audio playback) lives in sibling hooks but funnels
  * everything through this one.

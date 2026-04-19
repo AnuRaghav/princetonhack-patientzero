@@ -1,6 +1,6 @@
 import type { CuratedCaseSlug } from "@/lib/curatedCases";
 
-/** Which avatar rig to align spheres to — sim lab uses `default`. */
+/** Which avatar rig to align spheres to - sim lab uses `default`. */
 export type BodyLayoutPresetId = "default" | CuratedCaseSlug;
 
 type LayoutNumbers = {
@@ -55,7 +55,7 @@ const BASE: LayoutNumbers = {
   rJoint: 0.038,
 };
 
-/** Fine-tune per GLB rig — tweak these until spheres sit on mesh in orbit view. */
+/** Fine-tune per GLB rig - tweak these until spheres sit on mesh in orbit view. */
 const PRESET: Partial<Record<CuratedCaseSlug, Partial<LayoutNumbers>>> = {
   "maria-wolf": {
     relArm: 0.2,

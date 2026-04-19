@@ -52,7 +52,7 @@ function triBadge(v: Tri) {
       </Badge>
     );
   }
-  return <span className="text-[11px] text-[var(--color-ink-faint)]">—</span>;
+  return <span className="text-[11px] text-[var(--color-ink-faint)]">-</span>;
 }
 
 function regionLabel(r: BodyRegion): string {
@@ -193,7 +193,7 @@ export function FindingsPanel({ findings }: { findings: EncounterFindings }) {
         )}
         <Row label="Location">
           {painLoc.length === 0 ? (
-            <span className="text-[11.5px] text-[var(--color-ink-faint)]">—</span>
+            <span className="text-[11.5px] text-[var(--color-ink-faint)]">-</span>
           ) : (
             <div className="flex flex-wrap gap-1">
               {painLoc.map((r) => (
@@ -249,7 +249,7 @@ export function FindingsPanel({ findings }: { findings: EncounterFindings }) {
       <Section title="Affect">
         <Row label="Reported">
           <Badge tone="info" size="xs">
-            {findings.emotionalAffect.label || "—"}
+            {findings.emotionalAffect.label || "-"}
           </Badge>
         </Row>
       </Section>

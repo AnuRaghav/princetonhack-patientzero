@@ -12,7 +12,7 @@ export type MediaRecorderCallbacks = {
 
 export type UseMediaRecorderReturn = {
   isRecording: boolean;
-  /** Capability flag — true when `navigator.mediaDevices` and `MediaRecorder` exist. */
+  /** Capability flag - true when `navigator.mediaDevices` and `MediaRecorder` exist. */
   isSupported: boolean;
   start: () => Promise<void>;
   stop: () => void;

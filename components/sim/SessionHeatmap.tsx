@@ -17,7 +17,7 @@ type Cell = HeatmapBucket | null;
 
 /**
  * GitHub-style contribution heatmap. 7 rows (Sun→Sat) × N week columns.
- * Renders as a responsive CSS grid that fills the parent width — cells stay square
+ * Renders as a responsive CSS grid that fills the parent width - cells stay square
  * so the whole thing scales nicely from narrow sidebars to wide hero panels.
  */
 export function SessionHeatmap({
@@ -97,7 +97,7 @@ export function SessionHeatmap({
 
   return (
     <div className={cn("flex w-full min-w-0 flex-col gap-1.5", className)}>
-      {/* month label strip — uses identical column grid so labels sit above their week */}
+      {/* month label strip - uses identical column grid so labels sit above their week */}
       {ncols > 0 ? (
         <div
           className="grid h-3 w-full text-[9px] uppercase tracking-[0.16em] text-white/35"

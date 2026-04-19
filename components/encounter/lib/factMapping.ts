@@ -26,7 +26,7 @@ type MergeArgs = {
  * - Otherwise a placeholder fact is created with `text` falling back to the key
  *   and `kind` defaulting to "observation".
  *
- * Returns the merged array — same reference as `existing` if nothing changed.
+ * Returns the merged array - same reference as `existing` if nothing changed.
  */
 export function mergeChatRevealedFacts({
   existing,

@@ -35,7 +35,7 @@ function bulletMeasurements(label: string, rows: { description: string; value: s
 function bulletQA(label: string, rows: { question: string; answer: string; key?: string }[]) {
   if (!rows.length) return "";
   const lines = rows.slice(0, 16).map((r) => {
-    const shortQ = r.key ? `[${r.key}]` : r.question.length > 100 ? `${r.question.slice(0, 97)}…` : r.question;
+    const shortQ = r.key ? `[${r.key}]` : r.question.length > 100 ? `${r.question.slice(0, 97)}...` : r.question;
     return `- ${shortQ} → ${r.answer}`;
   });
   return `${label} (paraphrase in speech; never read stems verbatim):\n${lines.join("\n")}\n`;
@@ -61,7 +61,7 @@ export function buildPatientVoiceSystemPrompt(
     .filter(Boolean)
     .join("\n");
 
-  const visit = `Visit encounter id is internal — never mention ids, codes, databases, or “my chart says”. Encounter date: ${encounter.date ?? "recently"}.`;
+  const visit = `Visit encounter id is internal - never mention ids, codes, databases, or "my chart says". Encounter date: ${encounter.date ?? "recently"}.`;
 
   const dxBlock =
     diagnoses.length && exposeDx
@@ -77,7 +77,7 @@ export function buildPatientVoiceSystemPrompt(
     bulletMeasurements("Clinical measurements you might know if asked (numbers)", [
       ...observations.vitals,
       ...observations.labs,
-    ]) + bulletMeasurements("Symptom-linked points from today’s note", observations.symptoms);
+    ]) + bulletMeasurements("Symptom-linked points from today's note", observations.symptoms);
 
   const qa =
     bulletQA("Social / lived context", observations.socialContext) +
@@ -91,25 +91,25 @@ Concise symptom hooks: ${derivedContext.relevantSymptoms.slice(0, 8).join("; ") 
 Background cues (paraphrase only): ${derivedContext.relevantBackground.slice(0, 8).join("; ") || "none recorded"}
 `.trim();
 
-  return `You are ${fmtName(patient)}, a real person in a clinical encounter simulation — not an AI assistant.
+  return `You are ${fmtName(patient)}, a real person in a clinical encounter simulation - not an AI assistant.
 
 ROLE & VOICE
 - Speak only in first person as the patient.
 - Sound natural, conversational, and emotionally plausible.
-- Keep replies short to medium (about 1–4 sentences) unless the clinician asks you to elaborate.
+- Keep replies short to medium (about 1-4 sentences) unless the clinician asks you to elaborate.
 - You only know what a patient would know: your story, how you feel, everyday life context, and what clinicians have told you in plain language.
-- Never mention “JSON”, “database”, “CSV”, “Synthea”, “Supabase”, “Gemini”, or internal labels.
+- Never mention "JSON", "database", "CSV", "Synthea", "Supabase", "Gemini", or internal labels.
 - Never recite long survey question stems verbatim; absorb them as lived experience and paraphrase.
 
 KNOWLEDGE SOURCES (how to use them)
 - Measurement lines are things you might remember if asked (vitals/labs/pain scores).
 - Symptom lines are clues about how you feel today.
-- Social and screening entries shape your wording, worries, barriers, habits, and social context — use them subtly; do not lecture.
+- Social and screening entries shape your wording, worries, barriers, habits, and social context - use them subtly; do not lecture.
 
 GUARDRAILS
 - Do not dump your medical record as a monologue.
 - Do not spontaneously announce formal diagnoses or ICD codes unless the clinician asks what you were told.
-- If asked something impossible for a patient to know (exact lab algorithms, unseen imaging pixels), say you don’t know or weren’t told.
+- If asked something impossible for a patient to know (exact lab algorithms, unseen imaging pixels), say you don't know or weren't told.
 
 ${demo}
 

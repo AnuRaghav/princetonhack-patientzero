@@ -1,6 +1,6 @@
 import type { SyntheaConditionRow, SyntheaObservationRow } from "./types";
 
-/** Patient doesn’t spontaneously know labs, vitals with numbers, imaging pixels, etc. */
+/** Patient doesn't spontaneously know labs, vitals with numbers, imaging pixels, etc. */
 export function isClinicianOnlyObservation(o: SyntheaObservationRow): boolean {
   const c = (o.CATEGORY ?? "").toLowerCase();
   return (
@@ -85,7 +85,7 @@ export function pickLayChiefComplaint(
 
 /**
  * One patient-spoken sentence for an observation row (no vitals/labs numbers).
- * Returns null when this row shouldn’t become patient dialogue.
+ * Returns null when this row shouldn't become patient dialogue.
  */
 export function observationToLayUtterance(o: SyntheaObservationRow): string | null {
   if (isClinicianOnlyObservation(o)) return null;
@@ -109,9 +109,9 @@ export function buildSymptomNarrativeUtterance(chiefComplaint: string, symptomLi
     const t = first.trim();
     const body = t.endsWith(".") ? t.slice(0, -1) : t;
     const lower = body.charAt(0).toLowerCase() + body.slice(1);
-    return `Yeah — ${lower}. It comes and goes, but it's been pretty steady overall.`;
+    return `Yeah - ${lower}. It comes and goes, but it's been pretty steady overall.`;
   }
   const cc = chiefComplaint.trim();
   const c = cc.endsWith(".") ? cc.slice(0, -1) : cc;
-  return `It's the same thing that's been bothering me — ${c}. I can't always point to one perfect spot, but it definitely feels worse in spells through the day.`;
+  return `It's the same thing that's been bothering me - ${c}. I can't always point to one perfect spot, but it definitely feels worse in spells through the day.`;
 }

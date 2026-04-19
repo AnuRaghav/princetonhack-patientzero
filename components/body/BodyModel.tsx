@@ -66,7 +66,7 @@ function tuneMaterial(mat: Material) {
     mat.envMapIntensity = Math.max(mat.envMapIntensity ?? 1, 1.12);
   }
 
-  // Truly neutral baseColor + no diffuse map reads monochrome — slight warm bias.
+  // Truly neutral baseColor + no diffuse map reads monochrome - slight warm bias.
   if (
     mat instanceof MeshStandardMaterial ||
     mat instanceof MeshPhysicalMaterial ||
@@ -107,7 +107,7 @@ type ModelBounds = {
 
 const DEFAULT_MODEL_SRC = "/models/male_body.glb";
 
-/** Normalize each GLB to a consistent world size so curated assets aren’t microscopic next to fixed scale={0.02}. */
+/** Normalize each GLB to a consistent world size so curated assets aren't microscopic next to fixed scale={0.02}. */
 const FIT_TARGET_MAX_DIMENSION = 2.45;
 
 type Props = {

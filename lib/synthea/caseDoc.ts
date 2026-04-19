@@ -145,7 +145,7 @@ export function buildCaseDocumentFromSynthea(args: {
   const openingKey = `${keyPrefix}opening_presenting`;
   utterances[openingKey] = chiefComplaintToOpeningLine(chiefComplaint);
 
-  /** Lets slow-reveal unlock a grounded answer to “what brings you in / what’s your issue” first. */
+  /** Lets slow-reveal unlock a grounded answer to "what brings you in / what's your issue" first. */
   const openingRule: RevealRule = {
     id: openingKey,
     match_terms: [
@@ -215,7 +215,7 @@ export function buildCaseDocumentFromSynthea(args: {
     reveal_rules: [openingRule, narrativeRule, ...rules],
     checklist: [
       { id: "hx_open_ended", text: "Ask an open-ended chief complaint question", category: "history" },
-      { id: "empathy_acknowledge", text: "Acknowledge the patient’s experience", category: "communication" },
+      { id: "empathy_acknowledge", text: "Acknowledge the patient's experience", category: "communication" },
       { id: "exam_abdomen", text: "Perform an abdominal exam", category: "exam", required_exam_keys: ["palpate:abdomen"] },
     ],
     final_diagnosis: finalDx,

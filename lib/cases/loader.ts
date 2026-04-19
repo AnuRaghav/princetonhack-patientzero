@@ -21,8 +21,8 @@ const cache = new Map<string, CaseDocument>();
 
 /**
  * Loads a case document for the sim:
- * 1) **Synthea** — `patients."Id"` + `conditions` / `observations` in Supabase
- * 2) **Disk** — `data/cases/<slug>.json` (local dev / fixtures)
+ * 1) **Synthea** - `patients."Id"` + `conditions` / `observations` in Supabase
+ * 2) **Disk** - `data/cases/<slug>.json` (local dev / fixtures)
  *
  * The legacy `public.cases` dataset table is not used.
  */
@@ -57,7 +57,7 @@ export async function loadCase(caseId: string): Promise<CaseDocument> {
       return doc;
     }
   } catch {
-    // Missing Supabase env or tables — try disk.
+    // Missing Supabase env or tables - try disk.
   }
 
   return loadCaseFromDisk(key);

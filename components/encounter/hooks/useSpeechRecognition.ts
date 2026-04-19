@@ -162,7 +162,7 @@ export function useSpeechRecognition(
 
     rec.onerror = (ev) => {
       const error = (ev as unknown as { error?: string }).error ?? "speech-error";
-      // `no-speech` and `aborted` are routine — surface them as info-level
+      // `no-speech` and `aborted` are routine - surface them as info-level
       // hints rather than blocking errors so the UI doesn't keep showing
       // the user a scary banner every time they pause too long.
       if (error === "no-speech" || error === "aborted") {

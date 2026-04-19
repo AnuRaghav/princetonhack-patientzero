@@ -8,7 +8,7 @@ import { attachDataUrlToAudioElement } from "@/lib/client/audioFromDataUrl";
 type Turn = { role: "user" | "patient"; text: string };
 
 type Props = {
-  /** Synthea patient id — typically `session.case_id` */
+  /** Synthea patient id - typically `session.case_id` */
   patientId?: string;
   disabled?: boolean;
 };
@@ -237,7 +237,7 @@ export function VoiceEncounterPanel({ patientId, disabled }: Props) {
 
       <textarea
         className="mb-2 h-20 w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] p-3 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none smooth focus:border-[var(--color-ink)]"
-        placeholder="Speak (mic) or type what you want to ask the patient…"
+        placeholder="Speak (mic) or type what you want to ask the patient..."
         value={input}
         disabled={disabled || sending}
         onChange={(e) => setInput(e.target.value)}

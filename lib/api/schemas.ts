@@ -60,7 +60,7 @@ export const ExamResponseSchema = z.object({
   findings: z.record(z.string(), z.unknown()).optional(),
 });
 
-/** POST /api/diagnosis — student submits a working diagnosis hypothesis. */
+/** POST /api/diagnosis - student submits a working diagnosis hypothesis. */
 export const DiagnosisRequestSchema = z.object({
   sessionId: z.string().uuid(),
   diagnosis: z.string().min(1).max(200),
@@ -91,7 +91,7 @@ export const ScoreResponseSchema = z.object({
 });
 
 /**
- * STT — accepts either a multipart/form-data upload (preferred — `audio` file
+ * STT - accepts either a multipart/form-data upload (preferred - `audio` file
  * field + optional `language`/`mimeType` text fields) OR a JSON body with
  * `audioBase64`. The route handler picks the right path based on `Content-Type`.
  */
@@ -118,7 +118,7 @@ export type ExamRequest = z.infer<typeof ExamRequestSchema>;
 export type ScoreRequest = z.infer<typeof ScoreRequestSchema>;
 export type DiagnosisRequest = z.infer<typeof DiagnosisRequestSchema>;
 
-/** POST /api/patient/converse — Gemini patient + ElevenLabs TTS */
+/** POST /api/patient/converse - Gemini patient + ElevenLabs TTS */
 export const PatientConverseRequestSchema = z.object({
   patientId: z.string().optional(),
   transcript: z.string().min(1),

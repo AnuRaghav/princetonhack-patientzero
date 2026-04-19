@@ -16,7 +16,7 @@ const jasonOpening =
     : undefined;
 
 export const metadata: Metadata = {
-  title: `${curatedCase.title} — Mystery case · Patient Zero`,
+  title: `${curatedCase.title} - Mystery case · Patient Zero`,
   description: curatedCase.oneLiner,
 };
 

@@ -131,7 +131,7 @@ export function buildCaseDocumentFromDatasetRow(row: DatasetCaseRow): CaseDocume
   const reveal_rules: RevealRule[] = [];
   const patient_utterances_by_fact: Record<string, string> = {
     default:
-      "I’m not sure how to answer that—can you ask me in another way about how I’ve been feeling?",
+      "I'm not sure how to answer that-can you ask me in another way about how I've been feeling?",
   };
 
   for (let i = 0; i < symptoms.length; i++) {

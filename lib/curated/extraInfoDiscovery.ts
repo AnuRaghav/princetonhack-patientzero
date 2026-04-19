@@ -8,7 +8,7 @@ type ExtraTrigger = {
 };
 
 /**
- * Teaching-point style clues — distinct from symptom triggers; scored under “helpful extra info”.
+ * Teaching-point style clues - distinct from symptom triggers; scored under "helpful extra info".
  * Discovery uses patient text after the first clinician message (same window as symptom discovery).
  */
 const MARIA_EXTRA: ExtraTrigger[] = [

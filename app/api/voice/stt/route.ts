@@ -4,7 +4,7 @@ import { SttJsonRequestSchema, SttResponseSchema } from "@/lib/api/schemas";
 import { elevenLabsSttFromBuffer } from "@/lib/voice/elevenlabs";
 
 export const runtime = "nodejs";
-/** Allow ~25MB audio uploads. Voice turns are tiny (~50–200KB) but be permissive. */
+/** Allow ~25MB audio uploads. Voice turns are tiny (~50-200KB) but be permissive. */
 export const maxDuration = 60;
 
 type AudioPayload = {

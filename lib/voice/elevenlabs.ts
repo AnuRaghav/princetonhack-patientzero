@@ -4,11 +4,11 @@ import "server-only";
  * ElevenLabs text-to-speech → `data:audio/mpeg;base64,...` for playback without storing files.
  *
  * Env:
- * - `ELEVENLABS_API_KEY` (required — without this, TTS returns null)
+ * - `ELEVENLABS_API_KEY` (required - without this, TTS returns null)
  * - `ELEVENLABS_VOICE_ID` or `MARIA` (optional voice id; default voice below)
  * - `ELEVENLABS_MODEL_ID` (optional; default eleven_multilingual_v2)
  */
-const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel — clear for demos
+const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel - clear for demos
 
 export type ElevenLabsTtsResult = {
   audioUrl: string | null;

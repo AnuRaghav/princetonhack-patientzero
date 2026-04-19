@@ -41,7 +41,7 @@ export function DebriefCard({
 
   return (
     <div className="grid gap-3 lg:grid-cols-12">
-      {/* HERO — Overall (dark) =================================== */}
+      {/* HERO - Overall (dark) =================================== */}
       <Surface
         variant="hero"
         padding="none"
@@ -49,7 +49,7 @@ export function DebriefCard({
         className="lg:col-span-12"
       >
         <div className="grid grid-cols-1 gap-6 p-7 md:grid-cols-[1fr_1.4fr] md:p-8">
-          {/* Left — meta + ring */}
+          {/* Left - meta + ring */}
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-2">
               <Badge tone="dark" size="xs">
@@ -74,7 +74,7 @@ export function DebriefCard({
             </div>
           </div>
 
-          {/* Right — overall histogram + value */}
+          {/* Right - overall histogram + value */}
           <div className="flex flex-col items-center justify-end gap-3">
             <div className="num leading-none text-white">
               <span className="text-[88px] font-bold md:text-[120px]">{overall}</span>
@@ -138,7 +138,7 @@ export function DebriefCard({
         title="Misses"
         icon={<Icon.X size={12} />}
         items={misses}
-        emptyText="Nothing flagged — clean run."
+        emptyText="Nothing flagged - clean run."
         className="lg:col-span-6"
       />
     </div>

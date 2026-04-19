@@ -18,7 +18,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Patient Zero — AI Standardized Patient Console",
+  title: "Patient Zero - AI Standardized Patient Console",
   description:
     "A premium clinical simulation console for medical education. Deterministic case engine, 3D physical exam, scored debrief.",
 };

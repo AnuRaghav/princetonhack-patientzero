@@ -173,7 +173,7 @@ export function ProgressRing({
   );
 }
 
-/* A horizontal "histogram" bar made of tick marks — the signature
+/* A horizontal "histogram" bar made of tick marks - the signature
    visual flourish from the reference. */
 type TickBarProps = {
   value: number;

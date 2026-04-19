@@ -33,7 +33,7 @@ function scrubDesc(d: string): string {
 function truncate(s: string, max: number): string {
   const t = s.trim();
   if (t.length <= max) return t;
-  return `${t.slice(0, max - 1)}…`;
+  return `${t.slice(0, max - 1)}...`;
 }
 
 function observationKey(o: SymptomOrMeasureObservation | QuestionAnswerObservation): string {
@@ -70,7 +70,7 @@ function rowToMeasurement(row: SyntheaObservationRow): SymptomOrMeasureObservati
   const valRaw = row.VALUE;
   const val =
     valRaw == null || String(valRaw).trim() === ""
-      ? "—"
+      ? "-"
       : typeof valRaw === "number"
         ? String(valRaw)
         : String(valRaw).trim();
@@ -129,7 +129,7 @@ function buildDerived(
 
   const relevantSymptoms: string[] = [];
   for (const s of obs.symptoms.slice(0, 12)) {
-    if (s.value && s.value !== "—") relevantSymptoms.push(`${s.description}: ${s.value}`);
+    if (s.value && s.value !== "-") relevantSymptoms.push(`${s.description}: ${s.value}`);
     else relevantSymptoms.push(s.description);
   }
 
@@ -139,7 +139,7 @@ function buildDerived(
     relevantBackground.push(`${label}: ${qa.answer}`);
   }
   for (const qa of obs.screeningAnswers.slice(0, 8)) {
-    relevantBackground.push(`Screening — ${truncate(qa.question, 72)}: ${qa.answer}`);
+    relevantBackground.push(`Screening - ${truncate(qa.question, 72)}: ${qa.answer}`);
   }
 
   return {

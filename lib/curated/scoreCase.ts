@@ -3,7 +3,7 @@
  * Extend partial diagnosis / behavioral logic without changing the public shape.
  */
 
-/** Single encounter run metrics — behavioral may be supplied by another evaluator. */
+/** Single encounter run metrics - behavioral may be supplied by another evaluator. */
 export type SimulationRun = {
   timeTakenSec: number;
   questionsAsked: number;
@@ -11,7 +11,7 @@ export type SimulationRun = {
   symptomsRevealed: readonly string[];
   extraInfoFound: readonly string[];
   finalDiagnosis: string;
-  /** 0–20 inclusive when provided; otherwise treated as 0 unless you plug in computed behavioral scoring later. */
+  /** 0-20 inclusive when provided; otherwise treated as 0 unless you plug in computed behavioral scoring later. */
   behavioralScore?: number;
   behavioralBreakdown?: Readonly<Record<string, number>>;
 };
@@ -28,7 +28,7 @@ export type ScoreRubric = {
   idealQuestionCountMax: number;
   /**
    * Fraction of diagnosis points (max 30) when `acceptableDiagnoses` matches.
-   * Default 2/3 — easy to tune per case.
+   * Default 2/3 - easy to tune per case.
    */
   partialDiagnosisFraction?: number;
 };
@@ -72,7 +72,7 @@ export type ScoreCaseResult = {
   behavioralScore: number;
   breakdown: ScoreCaseBreakdown;
   metrics: ScoreCaseMetrics;
-  /** Echo from `SimulationRun` when another layer supplies sub-scores (rapport, clarity, …). */
+  /** Echo from `SimulationRun` when another layer supplies sub-scores (rapport, clarity, ...). */
   behavioralBreakdown?: Readonly<Record<string, number>>;
   feedback?: ScoreCaseFeedback;
 };
@@ -130,7 +130,7 @@ function matchesAnyDiagnosis(answer: string, list: readonly string[] | undefined
   return list.some((d) => normalizeToken(d) === a);
 }
 
-/** Diagnosis points: full, partial (acceptable list), or 0 — extend with fuzzy matchers later. */
+/** Diagnosis points: full, partial (acceptable list), or 0 - extend with fuzzy matchers later. */
 function scoreDiagnosis(args: {
   finalDiagnosis: string;
   rubric: ScoreRubric;
@@ -235,7 +235,7 @@ function appendQuestionYieldFeedback(bucket: FeedbackBucket, metrics: ScoreCaseM
     return;
   }
   if (metrics.questionYield < 0.35) {
-    bucket.weaknesses.push("Low question yield — many questions did not advance the assessment.");
+    bucket.weaknesses.push("Low question yield - many questions did not advance the assessment.");
     bucket.suggestions.push("Reduce repetition; clarify one topic before moving on.");
   }
 }

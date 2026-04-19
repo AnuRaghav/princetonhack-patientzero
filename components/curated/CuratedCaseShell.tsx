@@ -43,7 +43,7 @@ const BodyScene = dynamic(
       <div className="flex h-full min-h-[340px] items-center justify-center text-[13px] text-white/60">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-white" />
-          Booting 3D scene…
+          Booting 3D scene...
         </div>
       </div>
     ),
@@ -52,7 +52,7 @@ const BodyScene = dynamic(
 
 type Props = {
   curatedCase: CuratedCase;
-  /** Patient’s opening line from curated JSON (`opening_statement`). */
+  /** Patient's opening line from curated JSON (`opening_statement`). */
   initialPatientGreeting?: string;
 };
 
@@ -68,7 +68,7 @@ function formatAssessmentClock(ms: number): string {
 
 /**
  * Calls the K2-backed behavioral scoring endpoint. Always resolves with a
- * `BehavioralScoreResult` — network/parse failures fall back to a zero rubric
+ * `BehavioralScoreResult` - network/parse failures fall back to a zero rubric
  * so the deterministic clinical breakdown still renders.
  */
 async function fetchBehavioralScore(args: {
@@ -111,6 +111,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   const encounterRef = useRef<EncounterConversationHandle>(null);
   const router = useRouter();
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
+  const setActiveNavOverride = useSimUiStore((s) => s.setActiveNavOverride);
 
   const handleVitalExam = useCallback(
     (tool: "stethoscope" | "bp") => {
@@ -181,6 +182,11 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   useEffect(() => {
     setBodyHighlight(null);
   }, [setBodyHighlight]);
+
+  useEffect(() => {
+    setActiveNavOverride(challengeStarted ? "encounter" : "cases");
+    return () => setActiveNavOverride(null);
+  }, [challengeStarted, setActiveNavOverride]);
 
   useEffect(() => {
     if (!challengeStarted || assessmentStartedAt == null) return;
@@ -313,7 +319,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           !challengeStarted && "pointer-events-none",
         )}
       >
-        {/* LEFT — 3D exam (top) + interview findings (bottom), height matches transcript column */}
+        {/* LEFT - 3D exam (top) + interview findings (bottom), height matches transcript column */}
         <div className="flex h-full min-h-[560px] flex-col gap-3 lg:col-span-7">
           <Surface
             variant="hero"
@@ -379,7 +385,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           />
         </div>
 
-        {/* RIGHT — Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
+        {/* RIGHT - Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
         <EncounterConversation
           ref={encounterRef}
           key={challengeStarted ? `encounter-live-${slug}` : `encounter-hold-${slug}`}

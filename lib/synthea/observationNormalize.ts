@@ -43,7 +43,7 @@ const LAB_TERMS =
 const SYMPTOM_TERMS =
   /\b(pain|ache|hurt|nausea|vomit|cough|fever|chill|shortness|breath|dizz|headache|diarrhea|fatigue|weak|swelling|rash|itch|numb|tingling|cramp|bleed)\b/i;
 
-/** Strong admin / geographic noise — dropped unless overridden by useful SDOH below. */
+/** Strong admin / geographic noise - dropped unless overridden by useful SDOH below. */
 const ADMIN_JUNK =
   /\b(geocode|latitude|longitude|street address|full address|zip code|postal code|primary care facility|billing|employer id)\b/i;
 

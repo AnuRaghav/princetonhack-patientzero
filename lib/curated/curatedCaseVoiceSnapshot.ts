@@ -116,7 +116,7 @@ function flattenHistory(obj: unknown, maxDepth = 5): string[] {
       continue;
     }
     if (typeof v === "object" && v !== null) {
-      out.push(...flattenHistory(v, maxDepth - 1).map((s) => `${k} — ${s}`));
+      out.push(...flattenHistory(v, maxDepth - 1).map((s) => `${k} - ${s}`));
     }
   }
   return out;
@@ -134,7 +134,7 @@ function vitalsToRows(vitals: Record<string, unknown> | undefined): SymptomOrMea
   const rows: SymptomOrMeasureObservation[] = [];
   for (const [key, raw] of Object.entries(vitals)) {
     const label = labels[key] ?? key.replace(/_/g, " ");
-    const value = raw == null ? "—" : typeof raw === "number" ? String(raw) : String(raw).trim() || "—";
+    const value = raw == null ? "-" : typeof raw === "number" ? String(raw) : String(raw).trim() || "-";
     rows.push({
       description: label,
       value,
@@ -250,7 +250,7 @@ function buildObservations(row: CuratedCaseJsonRow): BucketedObservations {
   const vitals = vitalsToRows(row.vitals);
   const exam = examToRows(row.physical_exam);
   const hpiLines = flattenHistory(row.history_present_illness).map((text) => ({
-    description: "Today’s story",
+    description: "Today's story",
     value: text,
     units: null as string | null,
     date: null as string | null,

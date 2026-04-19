@@ -29,7 +29,7 @@ export function TextInputPanel({
   onSend,
   busy,
   className,
-  placeholder = "Type your question to the patient…",
+  placeholder = "Type your question to the patient...",
 }: Props) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);

@@ -24,7 +24,7 @@ import { PATIENT_SYSTEM_TEMPLATE } from "./prompts";
 
 /** Deterministic filler lines when the student asks about nothing in the grounded fact sheet. */
 const GENERIC_UNK = [
-  "I'm not sure — nobody's gone over that with me.",
+  "I'm not sure - nobody's gone over that with me.",
   "I don't really know how to answer that.",
   "That's not something I've been told.",
   "Sorry, I can't help with that part.",
@@ -73,13 +73,13 @@ function mockReply(args: {
   const raw = caseDoc.patient_utterances_by_fact[k]?.trim();
   const line = raw ?? hashPick(GENERIC_UNK, studentMessage);
 
-  const lead = hashPick(["Well… ", "Um… ", "I guess ", ""], `${k}:${studentMessage}`);
+  const lead = hashPick(["Well... ", "Um... ", "I guess ", ""], `${k}:${studentMessage}`);
   const reply = `${lead}${line.endsWith(".") ? line : `${line}.`}`;
   return { reply: reply.trim(), emotion: inferEmotionFromReply(reply) };
 }
 
 /**
- * Conversational Gemini path — same `geminiPatientReply` used by the curated voice flow,
+ * Conversational Gemini path - same `geminiPatientReply` used by the curated voice flow,
  * fed with a sim-flavored voice prompt and the recent transcript turns.
  */
 async function geminiSimReply(args: {

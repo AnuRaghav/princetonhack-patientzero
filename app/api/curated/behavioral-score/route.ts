@@ -110,7 +110,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ ...result, source: "k2" });
 }
 
-/** OpenAI-compatible response: choices[0].message.content (string) — be defensive. */
+/** OpenAI-compatible response: choices[0].message.content (string) - be defensive. */
 function extractAssistantContent(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const choices = (payload as { choices?: unknown }).choices;

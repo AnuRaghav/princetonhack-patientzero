@@ -29,7 +29,7 @@ type Props = {
   modelSrc?: string;
   /** Hotspot `id`s to pulse after a new interview symptom (subset of rendered regions). */
   pulseTargets?: readonly ExamTarget[];
-  /** Per-avatar hotspot tuning — curated cases pass their slug; sim omits for `default`. */
+  /** Per-avatar hotspot tuning - curated cases pass their slug; sim omits for `default`. */
   layoutPreset?: BodyLayoutPresetId;
   /**
    * Curated flows often hide overlapping 3D clip spheres and drive selection from the legend only.
@@ -74,7 +74,7 @@ export function BodyScene({
 
   return (
     <div className="relative h-full min-h-[420px] w-full overflow-hidden">
-      {/* Ambient halo — indigo / cyan, matches app chrome */}
+      {/* Ambient halo - indigo / cyan, matches app chrome */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -147,7 +147,7 @@ export function BodyScene({
           distance={14}
           decay={2}
         />
-        {/* useGLTF + Environment suspend — isolated so lights/camera stay stable */}
+        {/* useGLTF + Environment suspend - isolated so lights/camera stay stable */}
         <Suspense fallback={null}>
           <Environment preset="sunset" environmentIntensity={1.35} />
           <group position={[0, 0.8, 0]}>

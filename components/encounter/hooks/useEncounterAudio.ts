@@ -11,7 +11,7 @@ export type EncounterAudioCallbacks = {
 };
 
 export type UseEncounterAudioReturn = {
-  /** Headless audio element ref — keep mounted in the component tree. */
+  /** Headless audio element ref - keep mounted in the component tree. */
   audioRef: React.RefObject<HTMLAudioElement | null>;
   isPlaying: boolean;
   /** Begin playback of an arbitrary audio URL (data: or http). */
@@ -52,7 +52,7 @@ export function useEncounterAudio(
     if (el) {
       try {
         if (!el.paused) el.pause();
-        // Only clear `src` if one is currently set — otherwise `load()` on an
+        // Only clear `src` if one is currently set - otherwise `load()` on an
         // empty element triggers a spurious `error` event that callers (e.g.
         // status state machines) misinterpret as a playback failure.
         if (el.currentSrc || el.getAttribute("src")) {

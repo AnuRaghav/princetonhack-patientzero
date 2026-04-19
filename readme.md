@@ -51,7 +51,7 @@ npm run lint     # ESLint
 
 ## Curated mystery cases
 
-- **`/cases/maria-wolf`** and **`/cases/jason-mehta`** — timer, transcript, symptom discovery from dialogue, body exam hotspots, submission → **`/cases/[slug]/results`** with deterministic scoring helpers.
+- **`/cases/maria-wolf`** and **`/cases/jason-mehta`** - timer, transcript, symptom discovery from dialogue, body exam hotspots, submission → **`/cases/[slug]/results`** with deterministic scoring helpers.
 - Gameplay tuning: **`lib/curated/interviewSymptomTriggers.ts`**, **`components/curated/CuratedCaseShell.tsx`**, case JSON files, **`lib/curated/scoringRubrics.ts`**, **`components/body/hotspotLayout.ts`** per-slug presets.
 
 ## API routes
@@ -60,4 +60,4 @@ Patient text chat for curated encounters uses **`POST /api/patient/converse`** (
 
 ## License / visibility
 
-Repository is **`private`** in `package.json`. Adjust for your team’s policy.
+Repository is **`private`** in `package.json`. Adjust for your team's policy.

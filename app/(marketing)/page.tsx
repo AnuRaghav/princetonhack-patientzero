@@ -53,7 +53,7 @@ export default function ConsolePage() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-12">
-      {/* HERO LEFT — Brand / curated drills positioning ============ */}
+      {/* HERO LEFT - Brand / curated drills positioning ============ */}
       <Surface
         variant="hero"
         padding="none"
@@ -89,7 +89,7 @@ export default function ConsolePage() {
             </h1>
             <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-on-dark-soft)]">
               Two curated mystery patients. Fixed identity, fixed flow, fixed
-              URL — the diagnosis is yours to find. Run them on repeat to
+              URL - the diagnosis is yours to find. Run them on repeat to
               master the reasoning, Zetamac-style.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function ConsolePage() {
         </div>
       </Surface>
 
-      {/* HERO RIGHT — Case bank snapshot (secondary) =============== */}
+      {/* HERO RIGHT - Case bank snapshot (secondary) =============== */}
       <Surface variant="hero-2" padding="none" radius="xl" className="lg:col-span-4">
         <div className="flex h-full flex-col justify-between gap-6 p-7">
           <div className="flex flex-col gap-4">
@@ -135,7 +135,7 @@ export default function ConsolePage() {
 
             <p className="text-[12.5px] leading-relaxed text-[var(--color-on-dark-soft)]">
               Open sandbox with the broader simulation library. Curated drills
-              stay sharper — the catalog is here when you want range.
+              stay sharper - the catalog is here when you want range.
             </p>
 
             <div className="flex items-baseline gap-2">
@@ -176,7 +176,7 @@ export default function ConsolePage() {
         </div>
       </Surface>
 
-      {/* PRIMARY — Curated case features =========================== */}
+      {/* PRIMARY - Curated case features =========================== */}
       <Surface variant="card" padding="lg" radius="xl" className="lg:col-span-12">
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-1">
@@ -187,7 +187,7 @@ export default function ConsolePage() {
               Two mystery patients available now
             </h2>
             <p className="max-w-xl text-[12.5px] text-[var(--color-ink-muted)]">
-              Same patient every time. The diagnosis is hidden — interview,
+              Same patient every time. The diagnosis is hidden - interview,
               examine, and commit. Repeat until the pattern is automatic.
             </p>
           </div>
@@ -205,7 +205,7 @@ export default function ConsolePage() {
         </div>
       </Surface>
 
-      {/* SECONDARY — Stats + how-it-works ========================== */}
+      {/* SECONDARY - Stats + how-it-works ========================== */}
       <Stat
         label="Reveal latency"
         value="~180"
@@ -250,7 +250,7 @@ export default function ConsolePage() {
             tag="catalog"
             items={[
               "Two fixed encounters at fixed URLs",
-              "Same patient, same flow — repeatable on demand",
+              "Same patient, same flow - repeatable on demand",
             ]}
           />
           <Step

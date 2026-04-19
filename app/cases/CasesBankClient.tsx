@@ -149,7 +149,7 @@ export function CasesBankClient() {
 
   return (
     <div className="grid gap-3 lg:grid-cols-12">
-      {/* HERO — Case bank header ================================ */}
+      {/* HERO - Case bank header ================================ */}
       <Surface variant="hero" padding="none" radius="xl" className="lg:col-span-12">
         <div className="relative grid gap-6 p-7 md:p-8 lg:grid-cols-[1.4fr_1fr]">
           <div
@@ -222,7 +222,7 @@ export function CasesBankClient() {
               />
               <input
                 type="search"
-                placeholder="Search patients by name or Id…"
+                placeholder="Search patients by name or Id..."
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
                 className="h-10 w-full rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface-2)] pl-9 pr-4 text-[13px] text-[var(--color-ink)] placeholder:text-[var(--color-ink-faint)] outline-none smooth focus:border-[var(--color-ink)] focus:bg-[var(--color-surface)]"
@@ -231,7 +231,7 @@ export function CasesBankClient() {
             <div className="flex items-center gap-2 text-[12px] text-[var(--color-ink-muted)]">
               <span className="num">
                 {loading
-                  ? "Loading…"
+                  ? "Loading..."
                   : `${(data?.cases.length ?? 0).toLocaleString()} of ${totalDisplay}`}
               </span>
             </div>

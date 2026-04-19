@@ -55,8 +55,8 @@ export function symptomPreviewFromRow(row: Record<string, unknown>, maxLen = 120
 
 /**
  * Human-readable chief-complaint string for case cards (e.g. "itching, skin rash, nodal eruptions").
- * The dataset stores symptoms with underscores ("skin_rash") — we normalize, dedupe, and trim.
- * Safe to show in the UI — never contains the diagnosis itself.
+ * The dataset stores symptoms with underscores ("skin_rash") - we normalize, dedupe, and trim.
+ * Safe to show in the UI - never contains the diagnosis itself.
  */
 export function chiefComplaintFromRow(
   row: Record<string, unknown>,

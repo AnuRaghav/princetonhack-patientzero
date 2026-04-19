@@ -9,7 +9,7 @@ import type { CaseDocument } from "@/types/case";
  * (`lib/ai/patientVoicePrompt.ts` / `lib/curated/curatedCaseVoiceSnapshot.ts`)
  * but is built from the sim `CaseDocument` shape instead of `PatientCaseSnapshot`.
  *
- * Keep this file standalone — the curated voice path is untouched.
+ * Keep this file standalone - the curated voice path is untouched.
  */
 
 function fmtName(title: string): string {
@@ -29,7 +29,7 @@ function describeFindings(findings: CaseDocument["physical_exam_findings"], max 
     const sev = f.visual?.severity ? ` [${f.visual.severity}]` : "";
     return `- ${f.student_finding}${sev}`;
   });
-  return `Things a clinician might find on exam (paraphrase only — you're not the doctor):\n${lines.join("\n")}\n`;
+  return `Things a clinician might find on exam (paraphrase only - you're not the doctor):\n${lines.join("\n")}\n`;
 }
 
 function describeRevealedUtterances(
@@ -38,7 +38,7 @@ function describeRevealedUtterances(
   max = 14,
 ): string {
   if (!revealedFactKeys.length) {
-    return "Reveals so far this encounter: (none — first questions are fine.)\n";
+    return "Reveals so far this encounter: (none - first questions are fine.)\n";
   }
   const lines: string[] = [];
   for (const key of revealedFactKeys) {
@@ -48,7 +48,7 @@ function describeRevealedUtterances(
     lines.push(`- ${key}: ${u}`);
     if (lines.length >= max) break;
   }
-  if (!lines.length) return "Reveals so far this encounter: (none — first questions are fine.)\n";
+  if (!lines.length) return "Reveals so far this encounter: (none - first questions are fine.)\n";
   return `Reveals already discussed (stay consistent if topic comes up again):\n${lines.join("\n")}\n`;
 }
 
@@ -123,7 +123,7 @@ export function buildSimPatientVoicePrompt(args: {
     revealedFactKeys,
   );
 
-  return `You are ${name}, a real person in a clinical encounter simulation — not an AI assistant.
+  return `You are ${name}, a real person in a clinical encounter simulation - not an AI assistant.
 
 ROLE & VOICE
 - Speak only in first person as the patient.
@@ -134,9 +134,9 @@ ROLE & VOICE
 - Never read fact keys, IDs, or bracketed codes out loud.
 
 KNOWLEDGE SOURCES (how to use them)
-- The chief concern and HPI are what you came in for — answer broad "what's going on?" questions with these.
+- The chief concern and HPI are what you came in for - answer broad "what's going on?" questions with these.
 - Associated symptoms / negatives are things to share when asked the right question.
-- Reveals already discussed are topics you've already brought up — stay consistent if they come up again.
+- Reveals already discussed are topics you've already brought up - stay consistent if they come up again.
 - Things you could share if asked are extra detail; do NOT volunteer them unprompted.
 
 GUARDRAILS
@@ -161,7 +161,7 @@ ${moreToShare}
 Stay in character for every turn.`;
 }
 
-/** Lightweight emotion heuristic — replaces the structured-JSON emotion field. */
+/** Lightweight emotion heuristic - replaces the structured-JSON emotion field. */
 export function inferEmotionFromReply(reply: string, fallback = "discomfort"): string {
   const lower = reply.toLowerCase();
   if (/\b(pain|hurt|ache|aching|sore|throb)/.test(lower)) return "pain";

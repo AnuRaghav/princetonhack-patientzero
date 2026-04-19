@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { useSimUiStore, type ActiveNavTab } from "@/lib/store/simUiStore";
+
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
@@ -14,13 +16,14 @@ type NavItem = {
   href: string;
   icon: ReactNode;
   matchPrefix: string;
+  key: ActiveNavTab;
 };
 
 const NAV: ReadonlyArray<NavItem> = [
-  { label: "Console", href: "/", icon: <Icon.Layers size={14} />, matchPrefix: "/" },
-  { label: "Cases", href: "/cases", icon: <Icon.Clipboard size={14} />, matchPrefix: "/cases" },
-  { label: "Encounter", href: "/sim", icon: <Icon.Stethoscope size={14} />, matchPrefix: "/sim" },
-  { label: "Debrief", href: "/debrief", icon: <Icon.Pulse size={14} />, matchPrefix: "/debrief" },
+  { label: "Console", href: "/", icon: <Icon.Layers size={14} />, matchPrefix: "/", key: "console" },
+  { label: "Cases", href: "/cases", icon: <Icon.Clipboard size={14} />, matchPrefix: "/cases", key: "cases" },
+  { label: "Encounter", href: "/sim", icon: <Icon.Stethoscope size={14} />, matchPrefix: "/sim", key: "encounter" },
+  { label: "Debrief", href: "/debrief", icon: <Icon.Pulse size={14} />, matchPrefix: "/debrief", key: "debrief" },
 ];
 
 type Props = {
@@ -30,11 +33,12 @@ type Props = {
 
 export function AppShell({ children, rightSlot }: Props) {
   const pathname = usePathname() ?? "/";
+  const activeNavOverride = useSimUiStore((s) => s.activeNavOverride);
 
   return (
     <div className="page-chrome min-h-screen w-full p-3 md:p-5">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-[1440px] flex-col overflow-hidden rounded-[var(--radius-2xl)] border border-[color-mix(in_srgb,var(--color-accent)_12%,var(--color-line))] bg-[var(--color-app)] shadow-[var(--shadow-app)]">
-        {/* TOP BAR — Logo · Pill nav · Controls */}
+        {/* TOP BAR - Logo · Pill nav · Controls */}
         <header className="flex items-center justify-between gap-4 px-5 py-4 md:px-7 md:py-5">
           <Link href="/" className="shrink-0">
             <Logo />
@@ -42,8 +46,9 @@ export function AppShell({ children, rightSlot }: Props) {
 
           <nav className="hidden items-center gap-1 rounded-full border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-accent-soft)_35%,var(--color-surface-2))] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] md:inline-flex">
             {NAV.map((item) => {
-              const active =
-                item.matchPrefix === "/"
+              const active = activeNavOverride
+                ? activeNavOverride === item.key
+                : item.matchPrefix === "/"
                   ? pathname === "/"
                   : pathname.startsWith(item.matchPrefix);
               return (

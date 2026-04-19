@@ -33,7 +33,7 @@ const BodyScene = dynamic(
       <div className="flex h-full min-h-[460px] items-center justify-center text-[13px] text-white/60">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-white" />
-          Booting 3D scene…
+          Booting 3D scene...
         </div>
       </div>
     ),
@@ -191,7 +191,7 @@ export default function SimPage() {
     return (
       <div className="mt-10 flex items-center gap-3 text-[13px] text-[var(--color-ink-muted)]">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-line-strong)] border-t-[var(--color-ink)]" />
-        Loading encounter…
+        Loading encounter...
       </div>
     );
   }
@@ -219,7 +219,7 @@ export default function SimPage() {
           </h1>
           <p className="max-w-xl text-[13px] text-[var(--color-ink-muted)]">
             Take the history, examine the patient, and submit your diagnosis.
-            The disease label is hidden — you decide what this is.
+            The disease label is hidden - you decide what this is.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ export default function SimPage() {
 
       {/* CONTROL CENTER GRID ======================================= */}
       <div className="grid gap-3 lg:grid-cols-12">
-        {/* LEFT — DIALOGUE LANE */}
+        {/* LEFT - DIALOGUE LANE */}
         <div className="flex flex-col gap-3 lg:col-span-5">
           <PatientStatusCard
             painLevel={data.session.pain_level}
@@ -266,7 +266,7 @@ export default function SimPage() {
           <RevealNudge reveal={revealPulse} />
         </div>
 
-        {/* CENTER — DARK HERO 3D STAGE */}
+        {/* CENTER - DARK HERO 3D STAGE */}
         <Surface
           variant="hero"
           padding="none"
@@ -289,7 +289,7 @@ export default function SimPage() {
           </div>
         </Surface>
 
-        {/* RIGHT — INSIGHTS RAIL */}
+        {/* RIGHT - INSIGHTS RAIL */}
         <div className="flex flex-col gap-3 lg:col-span-2">
           <Surface variant="card" padding="md" radius="lg">
             <div className="text-[13px] font-semibold text-[var(--color-ink)]">
@@ -353,7 +353,7 @@ export default function SimPage() {
           </Surface>
         </div>
 
-        {/* BOTTOM — Findings + Diagnosis ============================ */}
+        {/* BOTTOM - Findings + Diagnosis ============================ */}
         <div className="lg:col-span-7">
           <FindingsPanel findings={data.session.discovered_findings} />
         </div>

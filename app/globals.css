@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   DESIGN TOKENS — "Aurora Console"
+   DESIGN TOKENS - "Aurora Console"
    Cool slate chrome, indigo/violet accents, cyan highlights. Modular panels.
    ========================================================================= */
 @theme inline {
@@ -17,7 +17,7 @@
   /* Lines on light */
   --color-line: rgba(15, 23, 42, 0.055);
   --color-line-strong: rgba(15, 23, 42, 0.12);
-  /* Module / card outlines — readable on white and on surface-3 */
+  /* Module / card outlines - readable on white and on surface-3 */
   --color-line-emphasis: rgba(15, 23, 42, 0.14);
 
   /* Text on light */
@@ -26,7 +26,7 @@
   --color-ink-muted: #64748b;
   --color-ink-faint: #94a3b8;
 
-  /* Dark hero surfaces — blue-black */
+  /* Dark hero surfaces - blue-black */
   --color-dark: #070b14;
   --color-dark-2: #0f1629;
   --color-dark-3: #152238;
@@ -37,7 +37,7 @@
   --color-on-dark-muted: rgba(255, 255, 255, 0.44);
   --color-on-dark-faint: rgba(255, 255, 255, 0.28);
 
-  /* Accents — indigo primary, violet brand, cyan info */
+  /* Accents - indigo primary, violet brand, cyan info */
   --color-accent: #6366f1;
   --color-accent-strong: #4f46e5;
   --color-accent-soft: rgba(99, 102, 241, 0.14);
@@ -58,7 +58,7 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
-  /* Shadows — layered + slightly cooler */
+  /* Shadows - layered + slightly cooler */
   --shadow-app:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 28px 56px -28px rgba(30, 41, 59, 0.14),
@@ -80,7 +80,7 @@
 }
 
 /* =========================================================================
-   ROOT — duplicate tokens for reliable `var(--color-X)` resolution.
+   ROOT - duplicate tokens for reliable `var(--color-X)` resolution.
    ========================================================================= */
 :root {
   color-scheme: light;
@@ -237,7 +237,7 @@ body {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.025em;
   }
-  /* Kept class name for compatibility — spectrum is violet → indigo → cyan */
+  /* Kept class name for compatibility - spectrum is violet → indigo → cyan */
   .grad-warm {
     background: linear-gradient(
       90deg,

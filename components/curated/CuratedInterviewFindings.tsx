@@ -106,7 +106,7 @@ export function CuratedInterviewFindings({
           ) : null}
         </div>
         <span className="num-mono shrink-0 text-[10px] uppercase tracking-[0.18em] text-white/45">
-          {selected ? `${rows.length} here` : "—"}
+          {selected ? `${rows.length} here` : "-"}
         </span>
       </div>
       <div className="dot-bg flex flex-1 flex-col gap-0 overflow-y-auto px-3 py-3">
@@ -118,13 +118,13 @@ export function CuratedInterviewFindings({
         ) : !selected ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
             Use the Regions list on the 3D preview to select where to review interview findings.
-            Symptoms from the dialogue that belong to that body area appear here — other regions stay empty
+            Symptoms from the dialogue that belong to that body area appear here - other regions stay empty
             until they have matching clues.
           </p>
         ) : rows.length === 0 ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
             No interview findings mapped to this area yet. Keep asking questions, or try another
-            region — for example stomach vs head can show different clues for the same case.
+            region - for example stomach vs head can show different clues for the same case.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
