@@ -5,6 +5,11 @@ import path from "node:path";
 
 import { buildCaseDocumentFromSynthea } from "@/lib/synthea/caseDoc";
 import {
+  getLatestEncounterId,
+  listConditionsForEncounter,
+  listObservationsForEncounter,
+} from "@/lib/synthea/encounterBackground";
+import {
   getPatientById,
   listConditionsForPatient,
   listObservationsForPatient,
@@ -29,12 +34,24 @@ export async function loadCase(caseId: string): Promise<CaseDocument> {
   try {
     const patient = await getPatientById(key);
     if (patient) {
-      const [conditions, observations] = await Promise.all([
-        listConditionsForPatient(key),
-        listObservationsForPatient(key, { limit: 200 }),
-      ]);
+      const encounterId = await getLatestEncounterId(key).catch(() => null);
+      const [conditions, observations] =
+        encounterId != null && encounterId.length > 0
+          ? await Promise.all([
+              listConditionsForEncounter(key, encounterId),
+              listObservationsForEncounter(key, encounterId),
+            ])
+          : await Promise.all([
+              listConditionsForPatient(key),
+              listObservationsForPatient(key, { limit: 200 }),
+            ]);
       const doc = CaseDocumentSchema.parse(
-        buildCaseDocumentFromSynthea({ patient, conditions, observations }),
+        buildCaseDocumentFromSynthea({
+          patient,
+          conditions,
+          observations,
+          encounterId,
+        }),
       ) as CaseDocument;
       cache.set(key, doc);
       return doc;

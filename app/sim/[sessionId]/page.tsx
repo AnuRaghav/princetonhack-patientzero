@@ -8,6 +8,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { ExamIntent } from "@/components/body/BodyScene";
 import { REGION_INFO } from "@/components/body/BodyScene";
 import { ChatPanel } from "@/components/sim/ChatPanel";
+import { DataUrlAudio } from "@/components/sim/DataUrlAudio";
+import { VoiceEncounterPanel } from "@/components/sim/VoiceEncounterPanel";
+import { RevealNudge } from "@/components/sim/RevealNudge";
 import { DiagnosisPanel } from "@/components/sim/DiagnosisPanel";
 import { FindingsPanel } from "@/components/sim/FindingsPanel";
 import { PatientStatusCard } from "@/components/sim/PatientStatusCard";
@@ -60,6 +63,12 @@ export default function SimPage() {
   const [lastFinding, setLastFinding] = useState<string | null>(null);
   const [lastTarget, setLastTarget] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [revealPulse, setRevealPulse] = useState<{
+    key: string;
+    kind: "observation" | "diagnosis" | "other";
+    text: string;
+  } | null>(null);
+  const [lastTtsUrl, setLastTtsUrl] = useState<string | null>(null);
 
   const currentSelection =
     typeof bodyHighlight === "string" && isExamTarget(bodyHighlight)
@@ -105,17 +114,38 @@ export default function SimPage() {
     );
   };
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (
+    message: string,
+    options?: { synthesizeSpeech?: boolean },
+  ) => {
     setBanner(null);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message }),
+        body: JSON.stringify({
+          sessionId,
+          message,
+          synthesizeSpeech: options?.synthesizeSpeech ?? false,
+        }),
       });
+      const payload = (await res.json()) as {
+        error?: string;
+        latestReveal: {
+          key: string;
+          kind: "observation" | "diagnosis" | "other";
+          text: string;
+        } | null;
+        ttsAudioUrl?: string | null;
+        ttsError?: string;
+      };
       if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
-        throw new Error(body.error ?? "Chat failed");
+        throw new Error(payload.error ?? "Chat failed");
+      }
+      setRevealPulse(payload.latestReveal);
+      setLastTtsUrl(payload.ttsAudioUrl ?? null);
+      if (options?.synthesizeSpeech && payload.ttsError) {
+        setBanner(payload.ttsError);
       }
       await refresh();
     } catch (e) {
@@ -236,6 +266,15 @@ export default function SimPage() {
           />
           <TranscriptPanel turns={data.transcript} />
           <ChatPanel onSend={handleSend} />
+          <VoiceEncounterPanel patientId={data.session.case_id} />
+          {lastTtsUrl ? (
+            <DataUrlAudio
+              key={lastTtsUrl.slice(0, 120)}
+              src={lastTtsUrl}
+              className="mt-1 h-9 w-full max-w-full"
+            />
+          ) : null}
+          <RevealNudge reveal={revealPulse} />
         </div>
 
         {/* CENTER — DARK HERO 3D STAGE */}

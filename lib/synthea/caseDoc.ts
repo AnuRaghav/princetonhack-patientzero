@@ -1,6 +1,15 @@
 import "server-only";
 
+import { chiefComplaintToOpeningLine } from "@/lib/ai/patientContext";
+
 import type { CaseDocument, PhysicalExamEntry, RevealRule } from "@/types/case";
+import {
+  buildSymptomNarrativeUtterance,
+  conditionToLayUtterance,
+  humanizeConditionDescription,
+  observationToLayUtterance,
+  pickLayChiefComplaint,
+} from "./patientVoice";
 import type { SyntheaConditionRow, SyntheaObservationRow, SyntheaPatientRow } from "./types";
 
 function yearsSince(isoDate: string, now = new Date()): number {
@@ -30,20 +39,6 @@ function fmtPatientName(p: SyntheaPatientRow): string {
   const last = (p.LAST ?? "").trim();
   const full = `${first} ${last}`.trim();
   return full || `Patient ${p.Id}`;
-}
-
-function pickChiefComplaint(observations: SyntheaObservationRow[]): string {
-  // Heuristic: pick the most recent survey/symptom-ish observation.
-  for (const o of observations) {
-    const cat = (o.CATEGORY ?? "").toLowerCase();
-    const desc = (o.DESCRIPTION ?? "").trim();
-    if (!desc) continue;
-    if (cat.includes("survey") || cat.includes("symptom") || cat.includes("social-history")) {
-      return desc.endsWith(".") ? desc : `${desc}.`;
-    }
-  }
-  const best = observations.find((o) => (o.DESCRIPTION ?? "").trim())?.DESCRIPTION?.trim();
-  return best ? (best.endsWith(".") ? best : `${best}.`) : "I haven't been feeling well lately.";
 }
 
 function buildExamFindings(): PhysicalExamEntry[] {
@@ -80,47 +75,45 @@ function buildExamFindings(): PhysicalExamEntry[] {
 }
 
 function buildRevealRulesFromRows(args: {
+  keyPrefix: string;
   conditions: SyntheaConditionRow[];
   observations: SyntheaObservationRow[];
 }): { rules: RevealRule[]; utterances: Record<string, string>; symptomLines: string[] } {
   const rules: RevealRule[] = [];
   const utterances: Record<string, string> = {};
   const symptomLines: string[] = [];
+  const p = args.keyPrefix;
 
   // Observations as symptom-ish facts.
-  for (const o of args.observations.slice(0, 80)) {
-    const desc = (o.DESCRIPTION ?? "").trim();
-    if (!desc) continue;
+  const obsRows = args.observations.slice(0, 80);
+  for (let i = 0; i < obsRows.length; i++) {
+    const o = obsRows[i]!;
+    const lay = observationToLayUtterance(o);
+    if (!lay) continue;
+
     const code = (o.CODE ?? "").trim();
-    const key = `obs:${code || desc.slice(0, 24).toLowerCase().replaceAll(/\s+/g, "_")}`;
-    const value =
-      o.VALUE == null
-        ? ""
-        : typeof o.VALUE === "number"
-          ? String(o.VALUE)
-          : String(o.VALUE).trim();
-    const units = (o.UNITS ?? "").trim();
-    const sentence = value
-      ? `${desc}: ${value}${units ? ` ${units}` : ""}.`
-      : `${desc}.`;
+    const key = `${p}obs_${i}_${(code || "d").replaceAll(/[^a-zA-Z0-9._-]/g, "_")}`;
+    utterances[key] = lay;
+    symptomLines.push(lay);
 
-    utterances[key] = sentence;
-    symptomLines.push(sentence);
-
-    const terms = stableWords(`${desc} ${code} ${value}`);
+    const descPlain = (o.DESCRIPTION ?? "").replace(/\[[^\]]+\]/g, " ").trim();
+    const terms = stableWords(`${descPlain} ${code}`);
     if (terms.length) {
       rules.push({ id: key, match_terms: terms, reveals: [key] });
     }
   }
 
   // Conditions as diagnosis facts (not necessarily revealed unless asked).
-  for (const c of args.conditions.slice(0, 30)) {
+  const condRows = args.conditions.slice(0, 30);
+  for (let i = 0; i < condRows.length; i++) {
+    const c = condRows[i]!;
+    const lay = conditionToLayUtterance(c);
+    if (!lay) continue;
     const desc = (c.DESCRIPTION ?? "").trim();
-    if (!desc) continue;
     const code = (c.CODE ?? "").trim();
-    const key = `cond:${code || desc.slice(0, 24).toLowerCase().replaceAll(/\s+/g, "_")}`;
-    utterances[key] = `I was told I have ${desc}.`;
-    const terms = stableWords(`${desc} ${code}`);
+    const key = `${p}cond_${i}_${(code || "d").replaceAll(/[^a-zA-Z0-9._-]/g, "_")}`;
+    utterances[key] = lay;
+    const terms = stableWords(`${humanizeConditionDescription(desc)} ${code}`);
     if (terms.length) rules.push({ id: key, match_terms: terms, reveals: [key] });
   }
 
@@ -131,23 +124,79 @@ export function buildCaseDocumentFromSynthea(args: {
   patient: SyntheaPatientRow;
   conditions: SyntheaConditionRow[];
   observations: SyntheaObservationRow[];
+  /** Optional: used to namespace fact keys (e.g. latest-encounter scope). */
+  encounterId?: string | null;
 }): CaseDocument {
   const name = fmtPatientName(args.patient);
   const age = args.patient.BIRTHDATE ? yearsSince(args.patient.BIRTHDATE) : 0;
   const sex = (args.patient.GENDER ?? "unknown").toLowerCase();
-  const chiefComplaint = pickChiefComplaint(args.observations);
-  const finalDx =
-    (args.conditions[0]?.DESCRIPTION ?? "").trim() ||
-    "Undifferentiated chief complaint (synthetic)";
+  const chiefComplaint = pickLayChiefComplaint(args.observations, args.conditions);
+  const rawDx = (args.conditions[0]?.DESCRIPTION ?? "").trim();
+  const finalDx = rawDx ? humanizeConditionDescription(rawDx) : "Undifferentiated chief complaint (synthetic)";
 
+  const enc = (args.encounterId ?? "").replaceAll("-", "").slice(0, 8) || "all";
+  const keyPrefix = `e${enc}_`;
   const { rules, utterances, symptomLines } = buildRevealRulesFromRows({
+    keyPrefix,
     conditions: args.conditions,
     observations: args.observations,
   });
 
-  // Provide a safe default reply so the app works without OpenAI.
-  utterances.default =
-    "I'm not sure how to describe it — I just don't feel like myself. Can you help me figure out what's going on?";
+  const openingKey = `${keyPrefix}opening_presenting`;
+  utterances[openingKey] = chiefComplaintToOpeningLine(chiefComplaint);
+
+  /** Lets slow-reveal unlock a grounded answer to “what brings you in / what’s your issue” first. */
+  const openingRule: RevealRule = {
+    id: openingKey,
+    match_terms: [
+      "what brings",
+      "why are you here",
+      "why did you come",
+      "come in today",
+      "what is your issue",
+      "your issue",
+      "at the moment",
+      "main problem",
+      "main issue",
+      "chief complaint",
+      "what is going on",
+      "what's going on",
+      "whats going on",
+      "tell me why",
+      "how can i help",
+      "what can i do for you",
+    ],
+    reveals: [openingKey],
+  };
+
+  const narrativeKey = `${keyPrefix}symptom_narrative`;
+  utterances[narrativeKey] = buildSymptomNarrativeUtterance(chiefComplaint, symptomLines);
+
+  const narrativeRule: RevealRule = {
+    id: narrativeKey,
+    match_terms: [
+      "where does the pain",
+      "where is the pain",
+      "where does it hurt",
+      "where do you feel",
+      "describe the pain",
+      "what kind of pain",
+      "what does it feel like",
+      "tell me more",
+      "how bad is",
+      "how bad does",
+      "rate your pain",
+      "rate the pain",
+      "what exactly is the pain",
+      "what exactly is the",
+      "pain or anxiety",
+      "wanting to check",
+    ],
+    reveals: [narrativeKey],
+  };
+
+  // Provide a safe default reply so the app works without LLM.
+  utterances.default = chiefComplaintToOpeningLine(chiefComplaint);
 
   return {
     id: args.patient.Id,
@@ -163,7 +212,7 @@ export function buildCaseDocumentFromSynthea(args: {
     physical_exam_findings: buildExamFindings(),
     hidden_red_flags: [],
     emotional_profile: "Anxious but composed.",
-    reveal_rules: rules,
+    reveal_rules: [openingRule, narrativeRule, ...rules],
     checklist: [
       { id: "hx_open_ended", text: "Ask an open-ended chief complaint question", category: "history" },
       { id: "empathy_acknowledge", text: "Acknowledge the patient’s experience", category: "communication" },

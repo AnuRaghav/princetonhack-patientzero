@@ -5,10 +5,26 @@ import { ChatRequestSchema, ChatResponseSchema } from "@/lib/api/schemas";
 import { loadCase } from "@/lib/cases/loader";
 import { projectFindings } from "@/lib/sim/findingsProjector";
 import { applyChatReveal } from "@/lib/sim/reducers";
-import { computeNewlyRevealedFacts } from "@/lib/sim/revealRules";
+import { computeAtMostOneNewReveal } from "@/lib/sim/slowReveal";
 import { transitionEmotionAfterChat, transitionPainAfterChat } from "@/lib/sim/stateMachine";
 import { toSessionRow } from "@/lib/session/db";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { elevenLabsTtsWithDiagnostics } from "@/lib/voice/elevenlabs";
+import type { CaseDocument } from "@/types/case";
+
+function latestRevealFromDoc(
+  caseDoc: CaseDocument,
+  revealedKeys: string[],
+): { key: string; kind: "observation" | "diagnosis" | "other"; text: string } | null {
+  const key = revealedKeys[0];
+  if (!key) return null;
+  const text = caseDoc.patient_utterances_by_fact[key];
+  if (!text) return null;
+  let kind: "observation" | "diagnosis" | "other" = "other";
+  if (key.includes("_cond_")) kind = "diagnosis";
+  else if (key.includes("_obs_")) kind = "observation";
+  return { key, kind, text };
+}
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -17,7 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { sessionId, message } = parsed.data;
+  const { sessionId, message, synthesizeSpeech } = parsed.data;
   const supabase = createAdminClient();
 
   const { data: sessionRow, error } = await supabase.from("sessions").select("*").eq("id", sessionId).single();
@@ -29,7 +45,7 @@ export async function POST(req: Request) {
   const caseDoc = await loadCase(session.case_id);
 
   const already = new Set(session.revealed_facts);
-  const newlyRevealed = computeNewlyRevealedFacts(caseDoc, message, already);
+  const newlyRevealed = computeAtMostOneNewReveal(caseDoc, message, already);
   const nextSession = applyChatReveal(session, newlyRevealed);
   const emotion = transitionEmotionAfterChat(session, newlyRevealed.length);
   const pain = transitionPainAfterChat(nextSession, newlyRevealed.length > 0 ? 0 : 0);
@@ -82,10 +98,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
   }
 
+  let ttsAudioUrl: string | null = null;
+  let ttsError: string | undefined;
+  if (synthesizeSpeech) {
+    const tts = await elevenLabsTtsWithDiagnostics(response.reply);
+    ttsAudioUrl = tts.audioUrl;
+    if (!tts.audioUrl && tts.error) ttsError = tts.error;
+  }
+
   const body = ChatResponseSchema.parse({
     reply: response.reply,
     emotion: finalEmotion,
     revealedFacts: newlyRevealed,
+    latestReveal: latestRevealFromDoc(caseDoc, newlyRevealed),
+    ttsAudioUrl,
+    ...(ttsError ? { ttsError } : {}),
     findings,
   });
   return NextResponse.json(body);
