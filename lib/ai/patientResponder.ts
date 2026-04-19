@@ -4,7 +4,10 @@ import OpenAI from "openai";
 
 import type { CaseDocument } from "@/types/case";
 
-import { patientReplyWithGoogleModel } from "./gemmaPatient";
+import {
+  buildSimPatientVoicePrompt,
+  inferEmotionFromReply,
+} from "@/lib/sim/patientVoicePrompt";
 import {
   buildPatientPromptFacts,
   craftChiefConcernReply,
@@ -14,10 +17,12 @@ import {
   looksLikeSymptomFollowUp,
   symptomFollowUpReply,
 } from "./patientContext";
+import { geminiPatientReply, type ConversationTurn } from "./geminiPatientConversation";
+import { isGeminiConfigured } from "./geminiRest";
 import { PatientLlmReplySchema } from "./structuredOutputs";
 import { PATIENT_SYSTEM_TEMPLATE } from "./prompts";
 
-/** Deterministic filler lines when the student asks about nothing in the grounded fact sheet (no Gemma/OpenAI yet). */
+/** Deterministic filler lines when the student asks about nothing in the grounded fact sheet. */
 const GENERIC_UNK = [
   "I'm not sure — nobody's gone over that with me.",
   "I don't really know how to answer that.",
@@ -25,6 +30,8 @@ const GENERIC_UNK = [
   "Sorry, I can't help with that part.",
   "Hmm. I hadn't really thought about it that way.",
 ];
+
+const MAX_PRIOR_TURNS = 12;
 
 function hashPick(strings: readonly string[], seed: string): string {
   let h = 2166136261;
@@ -45,10 +52,7 @@ function mockReply(args: {
 
   if (newlyRevealed.length === 0) {
     if (looksLikeChiefBreadthQuestion(studentMessage)) {
-      return {
-        reply: craftChiefConcernReply(caseDoc),
-        emotion: "discomfort",
-      };
+      return { reply: craftChiefConcernReply(caseDoc), emotion: "discomfort" };
     }
     if (looksLikeIdentityOrDemographicsQuestion(studentMessage)) {
       return {
@@ -57,10 +61,7 @@ function mockReply(args: {
       };
     }
     if (looksLikeSymptomFollowUp(studentMessage)) {
-      return {
-        reply: symptomFollowUpReply(caseDoc),
-        emotion: "discomfort",
-      };
+      return { reply: symptomFollowUpReply(caseDoc), emotion: "discomfort" };
     }
     return {
       reply: hashPick(GENERIC_UNK, studentMessage.trim().toLowerCase()),
@@ -70,22 +71,43 @@ function mockReply(args: {
 
   const k = newlyRevealed[0]!;
   const raw = caseDoc.patient_utterances_by_fact[k]?.trim();
-  const line =
-    raw ??
-    hashPick(GENERIC_UNK, studentMessage);
+  const line = raw ?? hashPick(GENERIC_UNK, studentMessage);
 
   const lead = hashPick(["Well… ", "Um… ", "I guess ", ""], `${k}:${studentMessage}`);
   const reply = `${lead}${line.endsWith(".") ? line : `${line}.`}`;
+  return { reply: reply.trim(), emotion: inferEmotionFromReply(reply) };
+}
 
-  const lower = reply.toLowerCase();
-  const emotion =
-    lower.includes("pain") || lower.includes("hurt") || lower.includes("ache")
-      ? "pain"
-      : lower.includes("worried") || lower.includes("scared") || lower.includes("anxious")
-        ? "anxiety"
-        : "discomfort";
+/**
+ * Conversational Gemini path — same `geminiPatientReply` used by the curated voice flow,
+ * fed with a sim-flavored voice prompt and the recent transcript turns.
+ */
+async function geminiSimReply(args: {
+  caseDoc: CaseDocument;
+  revealedFactKeys: string[];
+  priorTurns: readonly ConversationTurn[];
+  studentMessage: string;
+}): Promise<{ reply: string; emotion: string } | null> {
+  if (!isGeminiConfigured()) return null;
 
-  return { reply: reply.trim(), emotion };
+  const systemInstruction = buildSimPatientVoicePrompt({
+    caseDoc: args.caseDoc,
+    revealedFactKeys: args.revealedFactKeys,
+  });
+
+  const trimmedHistory = args.priorTurns.slice(-MAX_PRIOR_TURNS);
+
+  const result = await geminiPatientReply({
+    systemInstruction,
+    priorTurns: trimmedHistory,
+    clinicianUtterance: args.studentMessage,
+  });
+
+  if (!result.ok) return null;
+  const text = result.text.trim();
+  if (!text) return null;
+
+  return { reply: text, emotion: inferEmotionFromReply(text) };
 }
 
 export async function patientResponder(args: {
@@ -93,14 +115,18 @@ export async function patientResponder(args: {
   revealedFactKeys: string[];
   newlyRevealed: string[];
   studentMessage: string;
+  priorTurns?: readonly ConversationTurn[];
 }): Promise<{ reply: string; emotion: string }> {
-  const gemma = await patientReplyWithGoogleModel(args);
-  if (gemma) return gemma;
+  const gemini = await geminiSimReply({
+    caseDoc: args.caseDoc,
+    revealedFactKeys: args.revealedFactKeys,
+    priorTurns: args.priorTurns ?? [],
+    studentMessage: args.studentMessage,
+  });
+  if (gemini) return gemini;
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return mockReply(args);
-  }
+  if (!apiKey) return mockReply(args);
 
   const encounterFacts = buildPatientPromptFacts(args.caseDoc, args.revealedFactKeys);
   const system = PATIENT_SYSTEM_TEMPLATE.replace("{personality}", args.caseDoc.personality)
@@ -128,12 +154,10 @@ export async function patientResponder(args: {
 
   const raw = completion.choices[0]?.message?.content ?? "{}";
   const parsed = PatientLlmReplySchema.safeParse(JSON.parse(raw));
-  if (!parsed.success) {
-    return mockReply(args);
-  }
+  if (!parsed.success) return mockReply(args);
 
   return {
     reply: parsed.data.reply,
-    emotion: parsed.data.emotion ?? "discomfort",
+    emotion: parsed.data.emotion ?? inferEmotionFromReply(parsed.data.reply),
   };
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { patientResponder } from "@/lib/ai/patientResponder";
+import type { ConversationTurn } from "@/lib/ai/geminiPatientConversation";
 import { ChatRequestSchema, ChatResponseSchema } from "@/lib/api/schemas";
 import { loadCase } from "@/lib/cases/loader";
 import { projectFindings } from "@/lib/sim/findingsProjector";
@@ -52,6 +53,22 @@ export async function POST(req: Request) {
 
   const mergedFacts = Array.from(new Set([...session.revealed_facts, ...newlyRevealed]));
 
+  const { data: priorTurnRows } = await supabase
+    .from("transcript_turns")
+    .select("speaker, message, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(40);
+
+  const priorTurns: ConversationTurn[] = (priorTurnRows ?? [])
+    .filter((t): t is { speaker: string; message: string; created_at: string } =>
+      Boolean(t && typeof t.message === "string" && t.message.trim()),
+    )
+    .map((t) => ({
+      role: t.speaker === "student" ? "user" : "patient",
+      text: t.message,
+    }));
+
   await supabase.from("transcript_turns").insert({
     session_id: sessionId,
     speaker: "student",
@@ -64,6 +81,7 @@ export async function POST(req: Request) {
     revealedFactKeys: mergedFacts,
     newlyRevealed,
     studentMessage: message,
+    priorTurns,
   });
 
   await supabase.from("transcript_turns").insert({
