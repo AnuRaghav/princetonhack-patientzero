@@ -2,35 +2,40 @@
 
 import { useMemo } from "react";
 
-import type { DiscoveredFact, EncounterMessage } from "@/components/encounter";
+import type { EncounterMessage } from "@/components/encounter";
+import { REGION_INFO } from "@/components/body/regionInfo";
 import { discoverInterviewSymptoms } from "@/lib/curated/interviewSymptomTriggers";
 import type { CuratedCaseSlug } from "@/lib/curatedCases";
+import { useSimUiStore } from "@/lib/store/simUiStore";
+import type { ExamTarget } from "@/types/exam";
 import { Badge, Surface } from "@/components/ui";
 
 type Props = {
   slug: CuratedCaseSlug;
   messages: EncounterMessage[];
-  serverFacts: DiscoveredFact[];
 };
 
-export function CuratedInterviewFindings({ slug, messages, serverFacts }: Props) {
-  const rows = useMemo(() => {
-    const fromChat = serverFacts.map((f) => ({
-      key: `srv:${f.key}`,
-      label: f.text,
-    }));
-    const fromInterview = discoverInterviewSymptoms(slug, messages);
-    const seen = new Set(fromChat.map((r) => r.label.toLowerCase()));
-    const merged = [...fromChat];
-    for (const row of fromInterview) {
-      const k = row.label.toLowerCase();
-      if (seen.has(k)) continue;
-      seen.add(k);
-      merged.push({ key: `iv:${row.key}`, label: row.label });
+function isExamTarget(v: string | null): v is ExamTarget {
+  return v != null && v in REGION_INFO;
+}
+
+export function CuratedInterviewFindings({ slug, messages }: Props) {
+  const bodyHighlight = useSimUiStore((s) => s.bodyHighlight);
+
+  const { regionLabel, rows } = useMemo(() => {
+    const discovered = discoverInterviewSymptoms(slug, messages);
+    const selected = isExamTarget(bodyHighlight) ? bodyHighlight : null;
+    const label = selected ? REGION_INFO[selected].label : null;
+
+    if (!selected) {
+      return { regionLabel: null as string | null, rows: [] as typeof discovered };
     }
-    merged.sort((a, b) => a.label.localeCompare(b.label));
-    return merged;
-  }, [slug, messages, serverFacts]);
+
+    const filtered = discovered.filter((d) => d.regions.includes(selected));
+    return { regionLabel: label, rows: filtered };
+  }, [slug, messages, bodyHighlight]);
+
+  const selected = isExamTarget(bodyHighlight) ? bodyHighlight : null;
 
   return (
     <Surface
@@ -40,21 +45,33 @@ export function CuratedInterviewFindings({ slug, messages, serverFacts }: Props)
       className="flex min-h-[180px] flex-1 flex-col overflow-hidden border border-white/[0.08]"
     >
       <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold text-white">Interview findings</span>
-          <Badge tone="dark" size="xs">
-            from dialogue
-          </Badge>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[13px] font-semibold text-white">
+              {regionLabel ? "Symptoms · this region" : "Symptoms · pick a hotspot"}
+            </span>
+            <Badge tone="dark" size="xs">
+              interview
+            </Badge>
+          </div>
+          {regionLabel ? (
+            <span className="truncate text-[11px] text-white/50">{regionLabel}</span>
+          ) : null}
         </div>
-        <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
-          {rows.length} surfaced
+        <span className="num-mono shrink-0 text-[10px] uppercase tracking-[0.18em] text-white/45">
+          {selected ? `${rows.length} here` : "—"}
         </span>
       </div>
       <div className="dot-bg flex flex-1 flex-col gap-0 overflow-y-auto px-3 py-3">
-        {rows.length === 0 ? (
+        {!selected ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
-            Ask the patient questions in the encounter. Symptoms and clues they admit in conversation
-            will collect here.
+            Click a colored hotspot on the 3D model. Surfaced symptoms from the dialogue that belong to
+            that body area appear here — other regions stay empty until they have matching clues.
+          </p>
+        ) : rows.length === 0 ? (
+          <p className="px-1 text-[12px] leading-relaxed text-white/55">
+            No interview findings mapped to this area yet. Keep asking questions, or try another
+            hotspot — for example stomach vs head can show different clues for the same case.
           </p>
         ) : (
           <ul className="flex flex-col gap-2">

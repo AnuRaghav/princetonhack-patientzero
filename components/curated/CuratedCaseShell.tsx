@@ -2,12 +2,13 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import type { DiscoveredFact, EncounterMessage } from "@/components/encounter";
+import type { EncounterMessage } from "@/components/encounter";
 import { EncounterConversation } from "@/components/encounter";
 import { CuratedInterviewFindings } from "@/components/curated/CuratedInterviewFindings";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
+import { useSimUiStore } from "@/lib/store/simUiStore";
 import type { CuratedCase } from "@/lib/curatedCases";
 
 const BodyScene = dynamic(
@@ -37,7 +38,11 @@ const difficultyTone = (d: CuratedCase["difficulty"]) =>
 export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props) {
   const { title, oneLiner, difficulty, estimatedMinutes, slug } = curatedCase;
   const [transcriptMessages, setTranscriptMessages] = useState<EncounterMessage[]>([]);
-  const [serverFacts, setServerFacts] = useState<DiscoveredFact[]>([]);
+  const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
+
+  useEffect(() => {
+    setBodyHighlight(null);
+  }, [setBodyHighlight]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -110,7 +115,11 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             </div>
 
             <div className="relative h-[340px] w-full shrink-0">
-              <BodyScene onExam={() => {}} />
+              <BodyScene
+                onExam={(intent) => {
+                  setBodyHighlight(intent.target);
+                }}
+              />
               <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2">
                 <div className="rounded-full border border-white/[0.14] bg-black/30 px-3 py-1 text-[10.5px] uppercase tracking-[0.18em] text-white/70 backdrop-blur">
                   Interactions arrive with scoring
@@ -119,11 +128,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             </div>
           </Surface>
 
-          <CuratedInterviewFindings
-            slug={slug}
-            messages={transcriptMessages}
-            serverFacts={serverFacts}
-          />
+          <CuratedInterviewFindings slug={slug} messages={transcriptMessages} />
         </div>
 
         {/* RIGHT — Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
@@ -137,7 +142,6 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           initialGreeting={initialPatientGreeting}
           modeDefault="text"
           onTranscriptChange={setTranscriptMessages}
-          onDiscoveredFactsChange={setServerFacts}
           className="flex h-full min-h-[560px] flex-col lg:col-span-5"
         />
       </div>
