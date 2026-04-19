@@ -15,6 +15,10 @@ import {
 
 const PAGE_SIZE = 25;
 
+function cleanPatientName(name: string): string {
+  return name.replace(/\d+/g, "").replace(/\s+/g, " ").trim();
+}
+
 export function CasesBankClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -300,7 +304,7 @@ export function CasesBankClient() {
                         onClick={() => void startCase(row.id)}
                         className="num-mono text-left text-[13px] font-semibold tracking-tight text-[var(--color-ink)] hover:underline"
                       >
-                        {row.title}
+                        {cleanPatientName(row.title)}
                       </button>
                     </td>
                     <td className="px-5 py-3.5 text-[12px] text-[var(--color-ink-muted)]">
