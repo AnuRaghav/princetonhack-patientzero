@@ -35,21 +35,19 @@ export async function POST(req: Request) {
       text: h.text,
     }));
 
-    const responseText = await geminiPatientReply({
+    const gemini = await geminiPatientReply({
       systemInstruction,
       priorTurns,
       clinicianUtterance: transcript,
     });
 
-    if (!responseText) {
-      return NextResponse.json(
-        {
-          error:
-            "Gemini did not return text. Set GEMINI_API_KEY and optionally GEMINI_CONVERSATION_MODEL (e.g. gemini-2.0-flash).",
-        },
-        { status: 503 },
-      );
+    if (!gemini.ok) {
+      const status =
+        gemini.status === 429 ? 429 : gemini.status === 401 || gemini.status === 403 ? gemini.status : 503;
+      return NextResponse.json({ error: gemini.message }, { status });
     }
+
+    const responseText = gemini.text;
 
     let audioUrl: string | null = null;
     let ttsError: string | undefined;

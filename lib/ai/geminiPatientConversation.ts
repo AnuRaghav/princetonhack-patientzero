@@ -1,6 +1,12 @@
 import "server-only";
 
-import { getGeminiApiKey, postGeminiGenerateContent, type GeminiRestContent } from "./geminiRest";
+import {
+  getGeminiApiKey,
+  isGeminiConfigured,
+  postGeminiGenerateContent,
+  type GeminiGenerateResult,
+  type GeminiRestContent,
+} from "./geminiRest";
 
 export type ConversationTurn = {
   role: "user" | "patient";
@@ -8,8 +14,8 @@ export type ConversationTurn = {
 };
 
 /**
- * Patient dialogue via Gemini REST (`gemini-2.5-flash` only).
- * Uses `GEMINI_API_KEY` (see `getGeminiApiKey`).
+ * Patient dialogue via Gemini REST (`generateContent`).
+ * Model: `GEMINI_CONVERSATION_MODEL` / `GEMINI_MODEL` or default — see `getGeminiGenerateModelId`.
  */
 
 export async function geminiPatientReply(args: {
@@ -18,9 +24,14 @@ export async function geminiPatientReply(args: {
   clinicianUtterance: string;
   temperature?: number;
   maxOutputTokens?: number;
-}): Promise<string | null> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
+}): Promise<GeminiGenerateResult> {
+  if (!isGeminiConfigured()) {
+    return {
+      ok: false,
+      message:
+        "Missing Gemini credentials: use Vertex (`GEMINI_VERTEX_PROJECT` or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_APPLICATION_CREDENTIALS` → service account JSON), or AI Studio (`GEMINI_API_KEY`). Restart the dev server after editing env.",
+    };
+  }
 
   const temperature = args.temperature ?? 0.55;
   const maxOutputTokens = args.maxOutputTokens ?? 380;
@@ -37,7 +48,7 @@ export async function geminiPatientReply(args: {
   ];
 
   return postGeminiGenerateContent({
-    apiKey,
+    apiKey: getGeminiApiKey() ?? undefined,
     systemInstruction: args.systemInstruction,
     contents,
     generationConfig: { temperature, maxOutputTokens },

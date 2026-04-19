@@ -1,15 +1,31 @@
 import "server-only";
 
-/** Single supported Gemini model for this app (REST path segment). */
-export const GEMINI_MODEL_ID = "gemini-2.5-flash";
+import { GoogleAuth } from "google-auth-library";
 
-const GENERATE_CONTENT_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_ID}:generateContent`;
+/**
+ * Default model id segment in the `:generateContent` URL (both AI Studio & Vertex).
+ * Override with `GEMINI_CONVERSATION_MODEL` / `GEMINI_MODEL`.
+ */
+export const GEMINI_MODEL_ID_DEFAULT = "gemini-2.0-flash";
+
+export type GeminiGenerateResult =
+  | { ok: true; text: string }
+  | { ok: false; status?: number; message: string };
 
 export type GeminiRestContent = {
   role?: "user" | "model";
   parts: Array<{ text: string }>;
 };
 
+function extractGoogleApiErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const err = (data as Record<string, unknown>).error;
+  if (!err || typeof err !== "object") return null;
+  const msg = (err as Record<string, unknown>).message;
+  return typeof msg === "string" && msg.trim() ? msg.trim() : null;
+}
+
+/** Concatenate all text parts from the first candidate (some responses use multiple parts). */
 function extractCandidateText(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const root = data as Record<string, unknown>;
@@ -27,14 +43,61 @@ function extractCandidateText(data: unknown): string | null {
   const parts = contentObj.parts;
   if (!Array.isArray(parts) || parts.length === 0) return null;
 
-  const p0 = parts[0];
-  if (!p0 || typeof p0 !== "object") return null;
-  const text = (p0 as Record<string, unknown>).text;
-  return typeof text === "string" ? text : null;
+  const chunks: string[] = [];
+  for (const part of parts) {
+    if (!part || typeof part !== "object") continue;
+    const text = (part as Record<string, unknown>).text;
+    if (typeof text === "string" && text.length) chunks.push(text);
+  }
+  const joined = chunks.join("").trim();
+  return joined.length ? joined : null;
+}
+
+function describeEmptyResponse(data: unknown): string {
+  if (!data || typeof data !== "object") return "Empty response from Gemini.";
+  const root = data as Record<string, unknown>;
+  const pf = root.promptFeedback;
+  if (pf && typeof pf === "object") {
+    const block = (pf as Record<string, unknown>).blockReason;
+    if (typeof block === "string") return `Gemini blocked the prompt (${block}).`;
+  }
+  const candidates = root.candidates;
+  if (Array.isArray(candidates) && candidates[0] && typeof candidates[0] === "object") {
+    const fin = (candidates[0] as Record<string, unknown>).finishReason;
+    if (typeof fin === "string") return `Gemini returned no text (finishReason: ${fin}).`;
+  }
+  return "Gemini returned no usable text in candidates.";
 }
 
 /**
- * API key for `?key=` — prefers `GEMINI_API_KEY` as required for Gemini REST calls.
+ * Vertex: project id (e.g. `patient-zero-493803`).
+ * Reads `GEMINI_VERTEX_PROJECT`, then `GOOGLE_CLOUD_PROJECT`, then `GCP_PROJECT`.
+ */
+export function getVertexProjectId(): string | null {
+  const p =
+    process.env.GEMINI_VERTEX_PROJECT?.trim() ||
+    process.env.GOOGLE_CLOUD_PROJECT?.trim() ||
+    process.env.GCP_PROJECT?.trim();
+  return p || null;
+}
+
+/** Vertex region for `*-aiplatform.googleapis.com` (default `us-central1`). */
+export function getVertexLocation(): string {
+  return process.env.GEMINI_VERTEX_LOCATION?.trim() || "us-central1";
+}
+
+/**
+ * Model id for `generateContent` URL. Override with `GEMINI_CONVERSATION_MODEL` or `GEMINI_MODEL`.
+ */
+export function getGeminiGenerateModelId(): string {
+  const fromEnv =
+    process.env.GEMINI_CONVERSATION_MODEL?.trim() ||
+    process.env.GEMINI_MODEL?.trim();
+  return fromEnv || GEMINI_MODEL_ID_DEFAULT;
+}
+
+/**
+ * AI Studio / Generative Language API key (`?key=`). Not used when Vertex project is configured.
  */
 export function getGeminiApiKey(): string | null {
   const k =
@@ -44,22 +107,20 @@ export function getGeminiApiKey(): string | null {
   return k || null;
 }
 
-/**
- * POST `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=...`
- * Reads text from `candidates[0].content.parts[0].text`.
- */
-export async function postGeminiGenerateContent(args: {
-  apiKey: string;
-  systemInstruction?: string;
+/** True if Vertex (project + ADC) or AI Studio (API key) can run a request. */
+export function isGeminiConfigured(): boolean {
+  return Boolean(getVertexProjectId() || getGeminiApiKey());
+}
+
+function buildGeminiGeneratePayload(args: {
   contents: GeminiRestContent[];
+  systemInstruction?: string;
   generationConfig?: {
     temperature?: number;
     maxOutputTokens?: number;
     responseMimeType?: string;
   };
-}): Promise<string | null> {
-  const url = `${GENERATE_CONTENT_URL}?key=${encodeURIComponent(args.apiKey)}`;
-
+}): Record<string, unknown> {
   const body: Record<string, unknown> = {
     contents: args.contents.map((c) => {
       const row: Record<string, unknown> = {
@@ -86,16 +147,50 @@ export async function postGeminiGenerateContent(args: {
     if (Object.keys(gc).length > 0) body.generationConfig = gc;
   }
 
+  return body;
+}
+
+function resultFromHttpFailure(
+  status: number,
+  data: unknown,
+  rawText: string,
+  logLabel: string,
+): GeminiGenerateResult {
+  const bodySnippet =
+    typeof data === "object" && data !== null ? JSON.stringify(data).slice(0, 2000) : rawText.slice(0, 2000);
+  console.error(`[${logLabel}]`, status, bodySnippet);
+  const googleMsg = extractGoogleApiErrorMessage(data);
+  return {
+    ok: false,
+    status,
+    message:
+      googleMsg ??
+      (status === 429
+        ? "Gemini rate limit or quota exceeded (HTTP 429). Adjust Vertex quotas, model, or wait — see server logs."
+        : `Gemini API error (HTTP ${status}).`),
+  };
+}
+
+async function postGeminiAiStudioGenerateContent(args: {
+  apiKey: string;
+  modelId: string;
+  payload: Record<string, unknown>;
+}): Promise<GeminiGenerateResult> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(args.modelId)}:generateContent?key=${encodeURIComponent(args.apiKey)}`;
+
   let res: Response;
   try {
     res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(args.payload),
     });
   } catch (e) {
-    console.error("[Gemini REST] fetch failed", e instanceof Error ? e.message : e);
-    return null;
+    console.error("[Gemini AI Studio] fetch failed", e instanceof Error ? e.message : e);
+    return {
+      ok: false,
+      message: `Gemini request failed (${e instanceof Error ? e.message : "network error"}).`,
+    };
   }
 
   const rawText = await res.text();
@@ -103,26 +198,140 @@ export async function postGeminiGenerateContent(args: {
   try {
     data = rawText ? (JSON.parse(rawText) as unknown) : null;
   } catch {
-    if (!res.ok) {
-      console.error("[Gemini REST]", res.status, rawText.slice(0, 2000));
-    }
-    return null;
+    return {
+      ok: false,
+      status: res.status,
+      message:
+        !res.ok && rawText
+          ? `Gemini HTTP ${res.status}: ${rawText.slice(0, 500)}`
+          : `Gemini HTTP ${res.status}`,
+    };
   }
 
   if (!res.ok) {
-    const bodySnippet =
-      typeof data === "object" && data !== null ? JSON.stringify(data).slice(0, 2000) : rawText.slice(0, 2000);
-    console.error("[Gemini REST]", res.status, bodySnippet);
-    return null;
+    return resultFromHttpFailure(res.status, data, rawText, "Gemini AI Studio");
   }
 
   const text = extractCandidateText(data);
   if (!text?.trim()) {
     const snippet =
       typeof data === "object" && data !== null ? JSON.stringify(data).slice(0, 1200) : "";
-    console.warn("[Gemini REST] missing candidates[0].content.parts[0].text", snippet);
-    return null;
+    console.warn("[Gemini AI Studio] no text in candidates", snippet);
+    return {
+      ok: false,
+      message: describeEmptyResponse(data),
+    };
   }
 
-  return text.trim();
+  return { ok: true, text: text.trim() };
+}
+
+async function postGeminiVertexGenerateContent(args: {
+  project: string;
+  location: string;
+  modelId: string;
+  payload: Record<string, unknown>;
+}): Promise<GeminiGenerateResult> {
+  const auth = new GoogleAuth({
+    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+  });
+  const client = await auth.getClient();
+
+  const url = `https://${args.location}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(args.project)}/locations/${encodeURIComponent(args.location)}/publishers/google/models/${encodeURIComponent(args.modelId)}:generateContent`;
+
+  try {
+    const response = await client.request<unknown>({
+      url,
+      method: "POST",
+      data: args.payload,
+    });
+
+    const data = response.data as unknown;
+    const text = extractCandidateText(data);
+    if (!text?.trim()) {
+      const snippet =
+        typeof data === "object" && data !== null ? JSON.stringify(data).slice(0, 1200) : "";
+      console.warn("[Gemini Vertex] no text in candidates", snippet);
+      return {
+        ok: false,
+        message: describeEmptyResponse(data),
+      };
+    }
+
+    return { ok: true, text: text.trim() };
+  } catch (e: unknown) {
+    const gx = e as {
+      response?: { status?: number; data?: unknown };
+      message?: string;
+    };
+    const status = gx.response?.status;
+    const data = gx.response?.data;
+    const msg =
+      extractGoogleApiErrorMessage(data) ??
+      (typeof gx.message === "string" ? gx.message : null) ??
+      "Vertex AI generateContent failed.";
+    console.error("[Gemini Vertex]", status ?? "", data ?? e);
+    return {
+      ok: false,
+      status,
+      message:
+        msg +
+        (status === 401 || status === 403
+          ? " Ensure GOOGLE_APPLICATION_CREDENTIALS points to your service account JSON and the account has Vertex AI User (or broader) on this project."
+          : ""),
+    };
+  }
+}
+
+/**
+ * Gemini `generateContent`:
+ * - **Vertex AI** when `GEMINI_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `GCP_PROJECT` is set — uses
+ *   Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` → service account JSON path).
+ * - Otherwise **Google AI Studio** (`GEMINI_API_KEY` + generativelanguage.googleapis.com).
+ */
+export async function postGeminiGenerateContent(args: {
+  /** Ignored when Vertex project env is set; otherwise required unless key is only in env. */
+  apiKey?: string | null;
+  /** Overrides env default for this request only. */
+  modelId?: string;
+  systemInstruction?: string;
+  contents: GeminiRestContent[];
+  generationConfig?: {
+    temperature?: number;
+    maxOutputTokens?: number;
+    responseMimeType?: string;
+  };
+}): Promise<GeminiGenerateResult> {
+  const modelId = args.modelId?.trim() || getGeminiGenerateModelId();
+  const payload = buildGeminiGeneratePayload({
+    contents: args.contents,
+    systemInstruction: args.systemInstruction,
+    generationConfig: args.generationConfig,
+  });
+
+  const project = getVertexProjectId();
+  if (project) {
+    const location = getVertexLocation();
+    return postGeminiVertexGenerateContent({
+      project,
+      location,
+      modelId,
+      payload,
+    });
+  }
+
+  const apiKey = args.apiKey?.trim() || getGeminiApiKey();
+  if (!apiKey) {
+    return {
+      ok: false,
+      message:
+        "No Gemini credentials: for Vertex AI set GEMINI_VERTEX_PROJECT (or GOOGLE_CLOUD_PROJECT) and GOOGLE_APPLICATION_CREDENTIALS to your service account JSON; for AI Studio set GEMINI_API_KEY.",
+    };
+  }
+
+  return postGeminiAiStudioGenerateContent({
+    apiKey,
+    modelId,
+    payload,
+  });
 }
