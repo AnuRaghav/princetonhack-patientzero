@@ -15,6 +15,10 @@ import {
 } from "@/components/curated/CuratedInterviewFindings";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
 import { cn } from "@/components/ui/cn";
+import {
+  emptyBehavioralResult,
+  type BehavioralScoreResult,
+} from "@/lib/curated/behavioralScore";
 import { buildCuratedChallengeResult, curatedChallengeStorageKey } from "@/lib/curated/challengeResult";
 import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
 import { useSimUiStore } from "@/lib/store/simUiStore";
@@ -58,6 +62,36 @@ function formatAssessmentClock(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * Calls the K2-backed behavioral scoring endpoint. Always resolves with a
+ * `BehavioralScoreResult` — network/parse failures fall back to a zero rubric
+ * so the deterministic clinical breakdown still renders.
+ */
+async function fetchBehavioralScore(args: {
+  transcript: import("@/lib/curated/challengeResult").CuratedChallengeTranscriptLine[];
+  caseTitle: string;
+  patientOneLiner: string;
+}): Promise<BehavioralScoreResult> {
+  try {
+    const res = await fetch("/api/curated/behavioral-score", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    if (!res.ok) return emptyBehavioralResult();
+    const data = (await res.json()) as Partial<BehavioralScoreResult>;
+    if (!data || typeof data !== "object" || !data.breakdown) return emptyBehavioralResult();
+    return {
+      total: typeof data.total === "number" ? data.total : 0,
+      breakdown: data.breakdown,
+      comments: data.comments ?? {},
+      summary: data.summary,
+    };
+  } catch {
+    return emptyBehavioralResult();
+  }
+}
+
 export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props) {
   const { title, oneLiner, difficulty, estimatedMinutes, slug } = curatedCase;
   const [transcriptMessages, setTranscriptMessages] = useState<EncounterMessage[]>([]);
@@ -67,6 +101,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [symptomPulseTargets, setSymptomPulseTargets] = useState<readonly ExamTarget[]>([]);
   const [symptomToast, setSymptomToast] = useState<{ id: number; labels: string[] } | null>(null);
+  const [scoring, setScoring] = useState(false);
   const pulseTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const router = useRouter();
@@ -117,8 +152,8 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
     setChallengeStarted(true);
   };
 
-  const handleSubmitDiagnosis = (diagnosis: string) => {
-    if (assessmentStartedAt == null) return;
+  const handleSubmitDiagnosis = async (diagnosis: string) => {
+    if (assessmentStartedAt == null || scoring) return;
     const payload = buildCuratedChallengeResult({
       slug,
       caseTitle: title,
@@ -126,8 +161,20 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
       messages: transcriptMessages,
       assessmentStartedAt,
     });
-    const score = computeCuratedChallengeScore(payload);
-    sessionStorage.setItem(curatedChallengeStorageKey(slug), JSON.stringify({ ...payload, score }));
+
+    setScoring(true);
+    const behavioral = await fetchBehavioralScore({
+      transcript: payload.transcript,
+      caseTitle: title,
+      patientOneLiner: oneLiner,
+    });
+    const enriched = { ...payload, behavioral };
+    const score = computeCuratedChallengeScore(enriched);
+    sessionStorage.setItem(
+      curatedChallengeStorageKey(slug),
+      JSON.stringify({ ...enriched, score }),
+    );
+    setScoring(false);
     setFinishDialogOpen(false);
     router.push(`/cases/${slug}/results`);
   };
@@ -315,7 +362,11 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
       <ChallengeFinishDialog
         open={finishDialogOpen}
         caseTitle={title}
-        onCancel={() => setFinishDialogOpen(false)}
+        scoring={scoring}
+        onCancel={() => {
+          if (scoring) return;
+          setFinishDialogOpen(false);
+        }}
         onSubmit={handleSubmitDiagnosis}
       />
 
