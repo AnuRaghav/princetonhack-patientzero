@@ -11,5 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default function MariaWolfPage() {
-  return <CuratedCaseShell curatedCase={curatedCase} />;
+  const encounterPatientId = process.env.MARIA?.trim();
+
+  return (
+    <CuratedCaseShell
+      curatedCase={curatedCase}
+      encounterPatientId={encounterPatientId || undefined}
+    />
+  );
 }

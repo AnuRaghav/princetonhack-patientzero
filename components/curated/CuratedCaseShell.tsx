@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import { EncounterConversation } from "@/components/encounter";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
 import type { CuratedCase } from "@/lib/curatedCases";
 
@@ -23,13 +24,18 @@ const BodyScene = dynamic(
 
 type Props = {
   curatedCase: CuratedCase;
+  /**
+   * Synthea `patients.Id` for `/api/patient/converse`. When set, the transcript
+   * panel is a live `EncounterConversation` (text + voice) for this case.
+   */
+  encounterPatientId?: string;
 };
 
 const difficultyTone = (d: CuratedCase["difficulty"]) =>
   d === "Medium" ? "warn" : "danger";
 
-export function CuratedCaseShell({ curatedCase }: Props) {
-  const { title, oneLiner, difficulty, estimatedMinutes } = curatedCase;
+export function CuratedCaseShell({ curatedCase, encounterPatientId }: Props) {
+  const { title, oneLiner, difficulty, estimatedMinutes, slug } = curatedCase;
 
   return (
     <div className="flex flex-col gap-4">
@@ -110,60 +116,76 @@ export function CuratedCaseShell({ curatedCase }: Props) {
           </div>
         </Surface>
 
-        {/* RIGHT — Transcript shell */}
-        <Surface
-          variant="card"
-          padding="none"
-          radius="xl"
-          className="flex min-h-[560px] flex-col lg:col-span-5"
-        >
-          <div className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="text-[14px] font-semibold text-[var(--color-ink)]">
-                Encounter transcript
+        {/* RIGHT — Live encounter or staged placeholder */}
+        {encounterPatientId ? (
+          <EncounterConversation
+            sessionId={`curated-case-${slug}`}
+            backend="converse"
+            patientId={encounterPatientId}
+            disableHydration
+            title={`Encounter · ${title}`}
+            patientContext={oneLiner}
+            modeDefault="text"
+            className="min-h-[560px] flex-col lg:col-span-5"
+          />
+        ) : (
+          <Surface
+            variant="card"
+            padding="none"
+            radius="xl"
+            className="flex min-h-[560px] flex-col lg:col-span-5"
+          >
+            <div className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="text-[14px] font-semibold text-[var(--color-ink)]">
+                  Encounter transcript
+                </div>
+                <Badge tone="neutral" size="xs">
+                  staged
+                </Badge>
               </div>
-              <Badge tone="neutral" size="xs">
-                idle
-              </Badge>
+              <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
+                user · patient
+              </span>
             </div>
-            <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-              user · patient
-            </span>
-          </div>
 
-          <div className="dot-bg flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-5">
-            <SystemBubble>
-              Patient is ready. Encounter has not started yet.
-            </SystemBubble>
-            <PatientBubblePlaceholder />
-            <UserBubblePlaceholder />
-            <div className="mt-auto flex items-center justify-center gap-2 pt-4 text-[11px] text-[var(--color-ink-faint)]">
-              <span className="h-px flex-1 bg-[var(--color-line)]" />
-              Transcript begins when challenge starts
-              <span className="h-px flex-1 bg-[var(--color-line)]" />
+            <div className="dot-bg flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-5">
+              <SystemBubble>
+                Live chat is not configured for this build. Set the case patient
+                id in the environment (see README in{" "}
+                <span className="font-mono text-[10px]">components/encounter</span>
+                ).
+              </SystemBubble>
+              <PatientBubblePlaceholder />
+              <UserBubblePlaceholder />
+              <div className="mt-auto flex items-center justify-center gap-2 pt-4 text-[11px] text-[var(--color-ink-faint)]">
+                <span className="h-px flex-1 bg-[var(--color-line)]" />
+                Transcript begins when challenge starts
+                <span className="h-px flex-1 bg-[var(--color-line)]" />
+              </div>
             </div>
-          </div>
 
-          <div className="border-t border-[var(--color-line)] p-3">
-            <div className="relative">
-              <textarea
-                disabled
-                aria-disabled
-                placeholder="Conversation begins when you start the challenge."
-                className="h-20 w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3 pr-14 text-[13px] text-[var(--color-ink-muted)] placeholder:text-[var(--color-ink-faint)] outline-none"
-              />
-              <div className="absolute bottom-3 right-3">
-                <Button
-                  size="sm"
+            <div className="border-t border-[var(--color-line)] p-3">
+              <div className="relative">
+                <textarea
                   disabled
-                  trailingIcon={<Icon.Send size={12} />}
-                >
-                  Send
-                </Button>
+                  aria-disabled
+                  placeholder="Conversation begins when you start the challenge."
+                  className="h-20 w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3 pr-14 text-[13px] text-[var(--color-ink-muted)] placeholder:text-[var(--color-ink-faint)] outline-none"
+                />
+                <div className="absolute bottom-3 right-3">
+                  <Button
+                    size="sm"
+                    disabled
+                    trailingIcon={<Icon.Send size={12} />}
+                  >
+                    Send
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </Surface>
+          </Surface>
+        )}
       </div>
 
       {/* ACTION FOOTER ============================================= */}

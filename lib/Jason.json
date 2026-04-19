@@ -1,0 +1,139 @@
+[
+  {
+    "id": "bb88c0d7-c32c-4586-aa4e-092d46ac4367",
+    "slug": "jason-mehta-covid",
+    "title": "The Sick Traveler",
+    "patient_first_name": "Jason",
+    "patient_last_name": "Mehta",
+    "age": 29,
+    "sex": "Male",
+    "occupation": "Software engineer",
+    "language": "English",
+    "setting": "Urgent care",
+    "difficulty": "Easy-Medium",
+    "chief_complaint": "Fever, sore throat, fatigue, and cough after travel",
+    "opening_statement": "I got back from a trip a few days ago and since then I've felt pretty awful. I thought it was just travel exhaustion at first, but now I've got a sore throat, cough, and I feel wiped out.",
+    "diagnosis": "COVID-19",
+    "specialty": "Internal Medicine / Urgent Care",
+    "personality_summary": "Jason is a smart, talkative, slightly restless young professional. He is not dramatic, but he does tend to downplay symptoms at first and frame them as work stress, bad sleep, or travel fatigue. He answers casually and naturally, and does not immediately volunteer all exposure details unless asked directly about travel, sick contacts, or testing.",
+
+    "history_present_illness": {
+      "cough": {
+        "type": "Mostly dry",
+        "present": true
+      },
+      "fever": {
+        "present": true,
+        "max_temp_f": 100.8
+      },
+      "nausea": false,
+      "fatigue": {
+        "present": true,
+        "severity": "Feels unusually drained and low-energy"
+      },
+      "diarrhea": false,
+      "duration": "3 to 4 days",
+      "headache": true,
+      "timeline": "Symptoms started about 2 days after returning from work travel",
+      "vomiting": false,
+      "body_aches": true,
+      "chest_pain": false,
+      "sore_throat": {
+        "present": true,
+        "severity": "Moderate"
+      },
+      "chief_symptoms": [
+        "Fatigue",
+        "Sore throat",
+        "Dry cough",
+        "Low-grade fever",
+        "Body aches",
+        "Congestion"
+      ],
+      "nasal_congestion": true,
+      "patient_assumption": "Initially thought it was jet lag, poor sleep, or a bad cold",
+      "shortness_of_breath": false,
+      "symptom_progression": "Started with fatigue and sore throat, then cough and fever developed",
+      "loss_of_taste_or_smell": "Mildly reduced sense of smell noticed today"
+    },
+
+    "past_medical_history": {
+      "conditions": "No major chronic medical problems",
+      "vaccination_context": "Has had prior COVID vaccinations but no recent booster"
+    },
+
+    "medications": [
+      {
+        "name": "Ibuprofen",
+        "dose": "200 mg",
+        "frequency": "As needed"
+      },
+      {
+        "name": "DayQuil",
+        "dose": "Over the counter",
+        "frequency": "Used once or twice since symptoms started"
+      }
+    ],
+
+    "allergies": [
+      {
+        "substance": "None",
+        "reaction": "NKDA"
+      }
+    ],
+
+    "social_history": {
+      "alcohol": "Occasional",
+      "tobacco": "Never smoker",
+      "occupation": "Software engineer",
+      "travel_history": {
+        "type": "Work trip",
+        "details": "Flew to a tech conference and spent several days in crowded convention spaces, airports, rideshares, and restaurants",
+        "recent_travel": true
+      },
+      "exposure_history": {
+        "known_sick_contact": "A coworker on the trip mentioned feeling sick afterward",
+        "crowded_indoor_exposure": true
+      },
+      "living_situation": "Lives with one roommate",
+      "testing_behavior": "Has not tested yet because he assumed it was just travel fatigue or a routine viral illness",
+      "recreational_drugs": "None"
+    },
+
+    "vitals": {
+      "heart_rate": 102,
+      "spo2_percent": 98,
+      "temperature_f": 100.4,
+      "blood_pressure": "121/78",
+      "respiratory_rate": 16
+    },
+
+    "physical_exam": {
+      "heent": "Mild pharyngeal erythema, nasal congestion",
+      "neuro": "Alert and oriented, no focal deficits",
+      "cardiac": "Mild tachycardia, regular rhythm",
+      "general": "Tired appearing but not toxic, speaking in full sentences",
+      "pulmonary": "Clear to auscultation bilaterally, no respiratory distress"
+    },
+
+    "hidden_clues": [
+      "Recent air travel and crowded conference exposure",
+      "Symptoms began shortly after returning from the trip",
+      "Coworker may have been sick",
+      "Dry cough, sore throat, fever, fatigue, and body aches fit a viral picture",
+      "Mild change in smell is a strong clue if the player asks",
+      "He has not taken a COVID test yet"
+    ],
+
+    "teaching_points": [
+      "COVID-19 can present like a nonspecific viral illness with sore throat, cough, fatigue, fever, congestion, and myalgias",
+      "Recent travel and crowded indoor exposure are important epidemiologic clues",
+      "Patients may initially dismiss symptoms as travel exhaustion or a simple cold",
+      "Asking about smell or taste changes can help point toward COVID-19",
+      "Travel history and exposure history are important parts of an interview"
+    ],
+
+    "created_at": "2026-04-19 02:15:00.189515+00",
+    "updated_at": "2026-04-19 02:15:00.189515+00"
+  }
+]
