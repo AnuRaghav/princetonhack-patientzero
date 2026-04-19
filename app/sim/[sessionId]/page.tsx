@@ -7,14 +7,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { ExamIntent } from "@/components/body/BodyScene";
 import { REGION_INFO } from "@/components/body/BodyScene";
-import { ChatPanel } from "@/components/sim/ChatPanel";
-import { DataUrlAudio } from "@/components/sim/DataUrlAudio";
-import { VoiceEncounterPanel } from "@/components/sim/VoiceEncounterPanel";
+import { EncounterConversation } from "@/components/encounter";
+import type { DiscoveredFact } from "@/components/encounter";
 import { RevealNudge } from "@/components/sim/RevealNudge";
 import { DiagnosisPanel } from "@/components/sim/DiagnosisPanel";
 import { FindingsPanel } from "@/components/sim/FindingsPanel";
 import { PatientStatusCard } from "@/components/sim/PatientStatusCard";
-import { TranscriptPanel } from "@/components/sim/TranscriptPanel";
 import {
   Badge,
   Button,
@@ -68,7 +66,7 @@ export default function SimPage() {
     kind: "observation" | "diagnosis" | "other";
     text: string;
   } | null>(null);
-  const [lastTtsUrl, setLastTtsUrl] = useState<string | null>(null);
+  const [, setKnownFactKeys] = useState<Set<string>>(new Set());
 
   const currentSelection =
     typeof bodyHighlight === "string" && isExamTarget(bodyHighlight)
@@ -114,44 +112,37 @@ export default function SimPage() {
     );
   };
 
-  const handleSend = async (
-    message: string,
-    options?: { synthesizeSpeech?: boolean },
-  ) => {
-    setBanner(null);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          message,
-          synthesizeSpeech: options?.synthesizeSpeech ?? false,
-        }),
+  const handleAssistantReply = useCallback(
+    (
+      _message: unknown,
+      meta: { audioUrl: string | null; ttsError?: string },
+    ) => {
+      if (meta.ttsError) setBanner(meta.ttsError);
+      // Refresh to pick up any reveal/finding/pain/affect updates from /api/chat.
+      void refresh().catch(() => {});
+    },
+    [refresh],
+  );
+
+  const handleFactsChange = useCallback(
+    (facts: DiscoveredFact[]) => {
+      setKnownFactKeys((prev) => {
+        const next = new Set(prev);
+        let newest: DiscoveredFact | null = null;
+        for (const f of facts) {
+          if (!next.has(f.key)) {
+            next.add(f.key);
+            newest = f;
+          }
+        }
+        if (newest) {
+          setRevealPulse({ key: newest.key, kind: newest.kind, text: newest.text });
+        }
+        return next.size === prev.size ? prev : next;
       });
-      const payload = (await res.json()) as {
-        error?: string;
-        latestReveal: {
-          key: string;
-          kind: "observation" | "diagnosis" | "other";
-          text: string;
-        } | null;
-        ttsAudioUrl?: string | null;
-        ttsError?: string;
-      };
-      if (!res.ok) {
-        throw new Error(payload.error ?? "Chat failed");
-      }
-      setRevealPulse(payload.latestReveal);
-      setLastTtsUrl(payload.ttsAudioUrl ?? null);
-      if (options?.synthesizeSpeech && payload.ttsError) {
-        setBanner(payload.ttsError);
-      }
-      await refresh();
-    } catch (e) {
-      setBanner(e instanceof Error ? e.message : "Chat failed");
-    }
-  };
+    },
+    [],
+  );
 
   const handleExam = async (intent: ExamIntent) => {
     setBanner(null);
@@ -264,16 +255,14 @@ export default function SimPage() {
             painLevel={data.session.pain_level}
             emotionalState={data.session.emotional_state}
           />
-          <TranscriptPanel turns={data.transcript} />
-          <ChatPanel onSend={handleSend} />
-          <VoiceEncounterPanel patientId={data.session.case_id} />
-          {lastTtsUrl ? (
-            <DataUrlAudio
-              key={lastTtsUrl.slice(0, 120)}
-              src={lastTtsUrl}
-              className="mt-1 h-9 w-full max-w-full"
-            />
-          ) : null}
+          <EncounterConversation
+            sessionId={sessionId}
+            backend="chat"
+            modeDefault="text"
+            onAssistantReply={handleAssistantReply}
+            onDiscoveredFactsChange={handleFactsChange}
+            title="History taking"
+          />
           <RevealNudge reveal={revealPulse} />
         </div>
 
