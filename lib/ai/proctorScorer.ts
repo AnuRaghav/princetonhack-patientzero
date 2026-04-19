@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import type { CaseDocument } from "@/types/case";
 import type { ScoreResult } from "@/types/score";
 
+import { proctorSummaryWithGoogleModel } from "./gemmaProctor";
 import { PROCTOR_SYSTEM_TEMPLATE } from "./prompts";
 import { ProctorLlmSummarySchema } from "./structuredOutputs";
 import { computeChecklistProgress } from "@/lib/sim/sessionAssembler";
@@ -80,6 +81,20 @@ export async function proctorScorer(args: {
   transcriptText: string;
 }): Promise<ScoreResult> {
   const base = deterministicScores(args);
+
+  const gemmaSummary = await proctorSummaryWithGoogleModel({
+    checklistScore: base.checklistScore,
+    misses: base.misses,
+    strengths: base.strengths,
+    transcriptText: args.transcriptText,
+  });
+  if (gemmaSummary) {
+    return {
+      ...base,
+      summary: gemmaSummary,
+    };
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {

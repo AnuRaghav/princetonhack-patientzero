@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { TtsRequestSchema, TtsResponseSchema } from "@/lib/api/schemas";
+import { synthesizeElevenLabsToDataUrl } from "@/lib/voice/elevenlabs";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -9,6 +10,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const body = TtsResponseSchema.parse({ audioUrl: null });
-  return NextResponse.json(body);
+  try {
+    const dataUrl = await synthesizeElevenLabsToDataUrl(parsed.data.text, parsed.data.voice);
+    if (!dataUrl) {
+      return NextResponse.json(
+        { error: "Missing ELEVENLABS_API_KEY or synthesis failed" },
+        { status: 503 },
+      );
+    }
+    const body = TtsResponseSchema.parse({ audioUrl: dataUrl });
+    return NextResponse.json(body);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "TTS failed";
+    return NextResponse.json({ error: msg }, { status: 502 });
+  }
 }

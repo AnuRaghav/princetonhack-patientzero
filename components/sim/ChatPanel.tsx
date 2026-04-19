@@ -6,7 +6,7 @@ import { Button, Icon, Surface } from "@/components/ui";
 
 type Props = {
   disabled?: boolean;
-  onSend: (message: string) => Promise<void>;
+  onSend: (message: string, options?: { synthesizeSpeech?: boolean }) => Promise<void>;
 };
 
 const SUGGESTIONS = [
@@ -19,13 +19,14 @@ const SUGGESTIONS = [
 export function ChatPanel({ disabled, onSend }: Props) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [voiceReply, setVoiceReply] = useState(false);
 
   const submit = async (override?: string) => {
     const value = (override ?? text).trim();
     if (!value || sending || disabled) return;
     setSending(true);
     try {
-      await onSend(value);
+      await onSend(value, { synthesizeSpeech: voiceReply });
       setText("");
     } finally {
       setSending(false);
@@ -42,6 +43,17 @@ export function ChatPanel({ disabled, onSend }: Props) {
           ⏎ send · ⇧⏎ newline
         </span>
       </div>
+
+      <label className="flex cursor-pointer items-center gap-2 text-[12px] text-[var(--color-ink-muted)]">
+        <input
+          type="checkbox"
+          checked={voiceReply}
+          onChange={(e) => setVoiceReply(e.target.checked)}
+          disabled={disabled || sending}
+          className="rounded border-[var(--color-line-strong)]"
+        />
+        Voice reply (ElevenLabs) — requires API key on server
+      </label>
 
       <div className="flex flex-wrap gap-1.5">
         {SUGGESTIONS.map((s) => (

@@ -6,6 +6,8 @@ export type SyntheaPatientRow = {
   GENDER?: string | null;
   RACE?: string | null;
   ETHNICITY?: string | null;
+  /** When present in Supabase, only `true` rows are selectable for voice sim. */
+  ACTIVE?: boolean | null;
 };
 
 export type SyntheaConditionRow = {

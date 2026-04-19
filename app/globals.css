@@ -255,4 +255,17 @@ body {
     80% { transform: scale(1.7); opacity: 0; }
     100% { transform: scale(1.7); opacity: 0; }
   }
+  .reveal-nudge-enter {
+    animation: revealNudge 520ms ease-out both;
+  }
+  @keyframes revealNudge {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
