@@ -253,6 +253,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
               ) : null}
               <BodyScene
                 modelSrc={CURATED_BODY_MODEL[slug]}
+                layoutPreset={slug}
                 pulseTargets={symptomPulseTargets}
                 onExam={(intent) => {
                   setBodyHighlight(intent.target);
