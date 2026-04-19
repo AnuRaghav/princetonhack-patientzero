@@ -5,6 +5,7 @@ import type { ConversationTurn } from "@/lib/ai/geminiPatientConversation";
 import { buildPatientVoiceSystemPrompt } from "@/lib/ai/patientVoicePrompt";
 import { PatientConverseRequestSchema, PatientConverseResponseSchema } from "@/lib/api/schemas";
 import { loadPatientCaseForVoice } from "@/lib/synthea/patientCaseBuilder";
+import { resolveCuratedVoiceId } from "@/lib/voice/curatedVoiceMap";
 import { elevenLabsTtsWithDiagnostics } from "@/lib/voice/elevenlabs";
 
 export async function POST(req: Request) {
@@ -53,7 +54,8 @@ export async function POST(req: Request) {
     let ttsError: string | undefined;
     const wantAudio = synthesizeAudio !== false;
     if (wantAudio) {
-      const tts = await elevenLabsTtsWithDiagnostics(responseText);
+      const voiceId = resolveCuratedVoiceId(patientId);
+      const tts = await elevenLabsTtsWithDiagnostics(responseText, voiceId);
       audioUrl = tts.audioUrl;
       if (!tts.audioUrl && tts.error) ttsError = tts.error;
     }
