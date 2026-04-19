@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function MariaWolfPage() {
-  return <CuratedCaseShell curatedCase={curatedCase} />;
+  return <CuratedCaseShell curatedCase={curatedCase} simulatorCaseId="maria-wolf" />;
 }

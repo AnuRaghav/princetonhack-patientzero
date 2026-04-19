@@ -13,15 +13,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { caseId } = parsed.data;
-  // Request body still uses `caseId`; DB column is `sessions.patient` → `patients."Id"`.
-  const patient = await getPatientById(caseId).catch(() => null);
-  if (!patient) return NextResponse.json({ error: "Unknown patient" }, { status: 404 });
-
-  const caseDoc = await loadCase(caseId);
+  const patientFk = parsed.data.caseId.trim();
 
   const supabase = createAdminClient();
-  const patientFk = caseId.trim();
+
+  let patient = await getPatientById(patientFk).catch(() => null);
+
+  if (!patient) {
+    try {
+      await loadCase(patientFk);
+    } catch {
+      return NextResponse.json({ error: "Unknown patient" }, { status: 404 });
+    }
+
+    const { error: stubErr } = await supabase.from("patients").upsert({ Id: patientFk }, { onConflict: "Id" });
+    if (stubErr) {
+      return NextResponse.json({ error: stubErr.message }, { status: 500 });
+    }
+
+    patient = await getPatientById(patientFk).catch(() => null);
+    if (!patient) {
+      return NextResponse.json({ error: "Could not provision patient stub" }, { status: 500 });
+    }
+  }
+
+  const caseDoc = await loadCase(patientFk);
 
   const initialFindings = projectFindings({
     caseDoc,

@@ -35,7 +35,7 @@ export const CURATED_CASES: readonly CuratedCase[] = [
     slug: "maria-wolf",
     title: "Maria Wolf",
     oneLiner:
-      "Adult patient walks in with a chief complaint. The diagnosis is hidden — your job is to find it.",
+      "A 34-year-old office worker with a red, irritated eye. The diagnosis is hidden — interview her and work it out.",
     description:
       "A fixed mystery patient. Same history, same exam findings, every run. Interview, examine, and submit your working diagnosis — the answer is never given to you.",
     difficulty: "Medium",

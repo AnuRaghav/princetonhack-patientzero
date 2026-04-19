@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     const body = PatientConverseResponseSchema.parse({
       patientId: loaded.patient.Id,
       patient: {
-        id: p.id,
+        id: p.id ?? loaded.patient.Id,
         firstName: p.firstName,
         lastName: p.lastName,
       },

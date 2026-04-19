@@ -14,6 +14,7 @@ import {
   listConditionsForPatient,
   listObservationsForPatient,
 } from "@/lib/synthea/queries";
+import { buildMariaCaseDocument, MARIA_SIMULATOR_CASE_ID } from "@/lib/patientCases/mariaCaseDoc";
 import type { CaseDocument } from "@/types/case";
 import { CaseDocumentSchema } from "./schemas";
 
@@ -58,6 +59,12 @@ export async function loadCase(caseId: string): Promise<CaseDocument> {
     }
   } catch {
     // Missing Supabase env or tables — try disk.
+  }
+
+  if (key === MARIA_SIMULATOR_CASE_ID) {
+    const doc = CaseDocumentSchema.parse(await buildMariaCaseDocument()) as CaseDocument;
+    cache.set(key, doc);
+    return doc;
   }
 
   return loadCaseFromDisk(key);
