@@ -11,6 +11,7 @@ export type ConversationTurn = {
  * Patient dialogue via Gemini REST (`gemini-2.5-flash` only).
  * Uses `GEMINI_API_KEY` (see `getGeminiApiKey`).
  */
+
 export async function geminiPatientReply(args: {
   systemInstruction: string;
   priorTurns: ConversationTurn[];

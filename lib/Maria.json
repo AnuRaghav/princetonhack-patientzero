@@ -1,0 +1,69 @@
+[
+  {
+    "id": "4e009ce1-7815-4712-a345-a73779d64ad4",
+    "slug": "maria-wolf-pink-eye",
+    "title": "The Red Eye That Won’t Quit",
+    "patient_first_name": "Maria",
+    "patient_last_name": "Wolf",
+    "age": 34,
+    "sex": "Female",
+    "occupation": "Office worker",
+    "language": "English",
+    "setting": "Primary care / urgent care",
+    "difficulty": "Easy",
+    "chief_complaint": "Red, irritated eye",
+    "opening_statement": "I woke up a couple days ago and my eye was really red and irritated. It hasn’t really gone away.",
+    "diagnosis": "Viral conjunctivitis",
+    "specialty": "Primary Care / Ophthalmology",
+    "personality_summary": "Calm, polite, slightly uncomfortable but not dramatic. Answers briefly unless asked follow-up questions. Does not immediately provide all symptom details.",
+    "history_present_illness": {
+      "pain": "Mild discomfort, not severe",
+      "itching": "Mild",
+      "duration": "2 to 3 days",
+      "discharge": "Watery",
+      "irritation": true,
+      "laterality": "Started in one eye, now slightly affecting the other",
+      "eye_redness": true,
+      "vision_changes": false,
+      "light_sensitivity": "Minimal",
+      "patient_assumption": "Thinks it might just be irritation or something in the eye",
+      "associated_symptoms": "Mild cold symptoms recently"
+    },
+    "past_medical_history": {
+      "conditions": "None significant"
+    },
+    "medications": [],
+    "allergies": [],
+    "social_history": {
+      "work": "Office job",
+      "hygiene": "Uses shared office space",
+      "recent_contact": "Coworker recently had red eyes"
+    },
+    "vitals": {
+      "heart_rate": 80,
+      "spo2_percent": 99,
+      "temperature_f": 98.4,
+      "blood_pressure": "118/75"
+    },
+    "physical_exam": {
+      "general": "Well appearing, no distress",
+      "eye_exam": "Conjunctival redness, watery discharge, no vision loss"
+    },
+    "hidden_clues": [
+      "Watery discharge instead of thick pus",
+      "Started in one eye and spread to the other",
+      "Recent sick contact with similar symptoms",
+      "Mild cold symptoms",
+      "No vision loss or severe pain"
+    ],
+    "teaching_points": [
+      "Viral conjunctivitis presents with watery discharge and redness",
+      "Often spreads from one eye to the other",
+      "Highly contagious, associated with recent sick contacts",
+      "Important to differentiate from bacterial conjunctivitis (thick discharge)",
+      "Usually self-limited and does not require antibiotics"
+    ],
+    "created_at": "2026-04-19 02:03:16.141027+00",
+    "updated_at": "2026-04-19 02:03:16.141027+00"
+  }
+]
