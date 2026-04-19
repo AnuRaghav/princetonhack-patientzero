@@ -21,8 +21,6 @@ Create **`.env.local`** in the project root (not committed). Typical variables:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only admin tasks (if used) |
 | `GEMINI_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini (AI Studio) REST |
-| `GEMINI_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `GCP_PROJECT` | Optional: Vertex AI instead of API key |
-| `GEMINI_VERTEX_LOCATION` | e.g. `us-central1` |
 | `GEMINI_CONVERSATION_MODEL` / `GEMINI_MODEL` | Model id for patient chat |
 | `OPENAI_API_KEY` | Optional: other AI paths (proctor, etc.) |
 | `ELEVENLABS_API_KEY` | Optional: voice |

@@ -24,7 +24,7 @@ function toPriorTurns(history: { role: string; text: string }[] | undefined): Co
 }
 
 async function synthesizeAudioForReply(
-  patientId: string,
+  patientId: string | undefined,
   responseText: string,
 ): Promise<{ audioUrl: string | null; ttsError?: string }> {
   const voiceId = resolveCuratedVoiceId(patientId);
