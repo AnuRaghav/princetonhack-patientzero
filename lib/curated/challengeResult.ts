@@ -1,6 +1,7 @@
 import type { EncounterMessage } from "@/components/encounter/lib/types";
 import type { CuratedCaseSlug } from "@/lib/curatedCases";
 
+import type { BehavioralScoreResult } from "./behavioralScore";
 import type { ScoreCaseResult } from "./scoreCase";
 import { discoverInterviewSymptoms } from "./interviewSymptomTriggers";
 
@@ -36,6 +37,8 @@ export type CuratedChallengeResultV1 = {
   transcript: CuratedChallengeTranscriptLine[];
   /** Present when saved after scoring integration; older sessions omit this. */
   score?: ScoreCaseResult;
+  /** LLM-derived behavioral rubric (Maria/Jason curated flow). Optional — falls back to 0. */
+  behavioral?: BehavioralScoreResult;
 };
 
 export function curatedChallengeStorageKey(slug: string): string {
