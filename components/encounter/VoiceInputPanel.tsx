@@ -18,6 +18,8 @@ type Props = {
   className?: string;
   /** Which STT path is active (browser Web Speech vs server upload). */
   transport?: "browser" | "server";
+  /** Disables mic (e.g. parent locked assessment). */
+  locked?: boolean;
 };
 
 const STATUS_LABELS: Record<EncounterStatus, string> = {
@@ -46,6 +48,7 @@ export function VoiceInputPanel({
   onInterrupt,
   className,
   transport,
+  locked = false,
 }: Props) {
   if (!isSupported) {
     return (
@@ -69,6 +72,7 @@ export function VoiceInputPanel({
     : "text-transparent";
 
   const onMicClick = () => {
+    if (locked) return;
     if (isListening) {
       onStop();
     } else {
@@ -95,7 +99,7 @@ export function VoiceInputPanel({
         <button
           type="button"
           onClick={onMicClick}
-          disabled={status === "thinking" || status === "transcribing"}
+          disabled={locked || status === "thinking" || status === "transcribing"}
           aria-pressed={isListening}
           aria-label={isListening ? "Stop listening" : "Start listening"}
           className={cn(
@@ -144,6 +148,7 @@ export function VoiceInputPanel({
             size="sm"
             variant="danger"
             onClick={onInterrupt}
+            disabled={locked}
             leadingIcon={<Icon.X size={12} />}
           >
             Stop
@@ -153,6 +158,7 @@ export function VoiceInputPanel({
             size="sm"
             variant="secondary"
             onClick={onStart}
+            disabled={locked}
             leadingIcon={<Icon.Mic size={12} />}
           >
             New turn

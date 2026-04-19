@@ -13,17 +13,23 @@ import { Badge, Surface } from "@/components/ui";
 type Props = {
   slug: CuratedCaseSlug;
   messages: EncounterMessage[];
+  /** Only dialogue after Start assessment is used for discovery */
+  assessmentStartedAt: number | null;
 };
 
 function isExamTarget(v: string | null): v is ExamTarget {
   return v != null && v in REGION_INFO;
 }
 
-export function CuratedInterviewFindings({ slug, messages }: Props) {
+export function CuratedInterviewFindings({ slug, messages, assessmentStartedAt }: Props) {
   const bodyHighlight = useSimUiStore((s) => s.bodyHighlight);
 
   const { regionLabel, rows } = useMemo(() => {
-    const discovered = discoverInterviewSymptoms(slug, messages);
+    const scoped =
+      assessmentStartedAt == null
+        ? []
+        : messages.filter((m) => m.createdAt >= assessmentStartedAt);
+    const discovered = discoverInterviewSymptoms(slug, scoped);
     const selected = isExamTarget(bodyHighlight) ? bodyHighlight : null;
     const label = selected ? REGION_INFO[selected].label : null;
 
@@ -33,7 +39,7 @@ export function CuratedInterviewFindings({ slug, messages }: Props) {
 
     const filtered = discovered.filter((d) => d.regions.includes(selected));
     return { regionLabel: label, rows: filtered };
-  }, [slug, messages, bodyHighlight]);
+  }, [slug, messages, bodyHighlight, assessmentStartedAt]);
 
   const selected = isExamTarget(bodyHighlight) ? bodyHighlight : null;
 
@@ -63,7 +69,12 @@ export function CuratedInterviewFindings({ slug, messages }: Props) {
         </span>
       </div>
       <div className="dot-bg flex flex-1 flex-col gap-0 overflow-y-auto px-3 py-3">
-        {!selected ? (
+        {assessmentStartedAt == null ? (
+          <p className="px-1 text-[12px] leading-relaxed text-white/55">
+            Press <span className="font-medium text-white/80">Start assessment</span> below to begin. Until then,
+            findings are hidden.
+          </p>
+        ) : !selected ? (
           <p className="px-1 text-[12px] leading-relaxed text-white/55">
             Click a colored hotspot on the 3D model. Surfaced symptoms from the dialogue that belong to
             that body area appear here — other regions stay empty until they have matching clues.
