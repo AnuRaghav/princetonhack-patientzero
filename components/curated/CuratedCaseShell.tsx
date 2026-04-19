@@ -3,18 +3,29 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { EncounterMessage } from "@/components/encounter";
+import { mapSymptomRegionsToHotspots } from "@/components/body/regionInfo";
 import { EncounterConversation } from "@/components/encounter";
 import { ChallengeFinishDialog } from "@/components/curated/ChallengeFinishDialog";
-import { CuratedInterviewFindings } from "@/components/curated/CuratedInterviewFindings";
+import {
+  CuratedInterviewFindings,
+  type NewSymptomDiscoveredPayload,
+} from "@/components/curated/CuratedInterviewFindings";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
 import { cn } from "@/components/ui/cn";
 import { buildCuratedChallengeResult, curatedChallengeStorageKey } from "@/lib/curated/challengeResult";
 import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
 import { useSimUiStore } from "@/lib/store/simUiStore";
-import type { CuratedCase } from "@/lib/curatedCases";
+import type { CuratedCase, CuratedCaseSlug } from "@/lib/curatedCases";
+import type { ExamTarget } from "@/types/exam";
+
+/** Paths must match filenames in `public/models/` exactly (case-sensitive on Linux/production). */
+const CURATED_BODY_MODEL: Record<CuratedCaseSlug, string> = {
+  "maria-wolf": "/models/maria.glb",
+  "jason-mehta": "/models/jason.glb",
+};
 
 const BodyScene = dynamic(
   () => import("@/components/body/BodyScene").then((m) => ({ default: m.BodyScene })),
@@ -54,8 +65,28 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   const [assessmentStartedAt, setAssessmentStartedAt] = useState<number | null>(null);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [nowTick, setNowTick] = useState(() => Date.now());
+  const [symptomPulseTargets, setSymptomPulseTargets] = useState<readonly ExamTarget[]>([]);
+  const [symptomToast, setSymptomToast] = useState<{ id: number; labels: string[] } | null>(null);
+  const pulseTimerRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const router = useRouter();
   const setBodyHighlight = useSimUiStore((s) => s.setBodyHighlight);
+
+  const handleNewSymptomDiscovered = useCallback((payload: NewSymptomDiscoveredPayload) => {
+    setSymptomPulseTargets(mapSymptomRegionsToHotspots(payload.regions));
+    setSymptomToast({ id: Date.now(), labels: payload.labels });
+    if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    pulseTimerRef.current = window.setTimeout(() => setSymptomPulseTargets([]), 4800);
+    toastTimerRef.current = window.setTimeout(() => setSymptomToast(null), 5200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setBodyHighlight(null);
@@ -78,6 +109,10 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
   }, [transcriptMessages, assessmentStartedAt]);
 
   const handleStartAssessment = () => {
+    if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    setSymptomPulseTargets([]);
+    setSymptomToast(null);
     setAssessmentStartedAt(Date.now());
     setChallengeStarted(true);
   };
@@ -173,7 +208,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
       <div
         className={cn(
           "relative grid gap-3 lg:grid-cols-12 lg:items-stretch",
-          !challengeStarted && "pointer-events-none opacity-[0.38]",
+          !challengeStarted && "pointer-events-none",
         )}
       >
         {/* LEFT — 3D exam (top) + interview findings (bottom), height matches transcript column */}
@@ -199,7 +234,27 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             </div>
 
             <div className="relative h-[340px] w-full shrink-0">
+              {symptomToast ? (
+                <div
+                  key={symptomToast.id}
+                  className="pointer-events-none absolute left-1/2 top-3 z-20 w-[min(92%,320px)] -translate-x-1/2 opacity-100 transition-opacity duration-300"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="rounded-xl border border-amber-400/45 bg-black/85 px-4 py-2.5 shadow-lg backdrop-blur-md">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-amber-200/95">
+                      New symptom discovered
+                    </p>
+                    <p className="mt-1 text-[12.5px] leading-snug text-white/90">
+                      {symptomToast.labels.join(" · ")}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
               <BodyScene
+                modelSrc={CURATED_BODY_MODEL[slug]}
+                layoutPreset={slug}
+                pulseTargets={symptomPulseTargets}
                 onExam={(intent) => {
                   setBodyHighlight(intent.target);
                 }}
@@ -216,6 +271,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
             slug={slug}
             messages={transcriptMessages}
             assessmentStartedAt={assessmentStartedAt}
+            onNewSymptomDiscovered={handleNewSymptomDiscovered}
           />
         </div>
 
@@ -234,6 +290,14 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           interactionLocked={!challengeStarted}
           className="flex h-full min-h-[560px] flex-col lg:col-span-5"
         />
+
+        {/* Dim workspace without applying opacity to ancestors of WebGL (opacity breaks canvas compositing). */}
+        {!challengeStarted ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-[45] bg-black/45"
+            aria-hidden
+          />
+        ) : null}
 
         {!challengeStarted ? (
           <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-4">

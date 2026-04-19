@@ -46,3 +46,15 @@ export const REGION_INFO: Record<
     detail: "Joint-focused palpation for focal tenderness.",
   },
 };
+
+const HOTSPOT_EXAM_TARGETS: readonly ExamTarget[] = ["head", "chest", "stomach", "arms", "legs", "joints"];
+
+/** Map interview symptom regions to spheres we actually render (abdomen / RLQ → stomach). */
+export function mapSymptomRegionsToHotspots(regions: readonly ExamTarget[]): ExamTarget[] {
+  const out = new Set<ExamTarget>();
+  for (const r of regions) {
+    if (HOTSPOT_EXAM_TARGETS.includes(r)) out.add(r);
+    else if (r === "abdomen" || r === "rlq") out.add("stomach");
+  }
+  return [...out];
+}
