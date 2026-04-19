@@ -85,7 +85,7 @@ export function BodyScene({
       </div>
 
       <Canvas
-        camera={{ position: [0, 0.6, 7], fov: 35 }}
+        camera={{ position: [0, 0.72, 7], fov: 35 }}
         gl={{
           alpha: false,
           // AgX tends to preserve color better than ACES on stylized / game assets.
@@ -130,7 +130,8 @@ export function BodyScene({
         {/* useGLTF + Environment suspend — isolated so lights/camera stay stable */}
         <Suspense fallback={null}>
           <Environment preset="sunset" environmentIntensity={1.35} />
-          <group position={[0, -0.5, 0]}>
+          {/* Lift rig so head/torso sit higher in the viewport (Maria + Jason + sim). */}
+          <group position={[0,.5, 0]}>
             <BodyModel
               modelSrc={modelSrc}
               onBoundsChange={handleBoundsChange}
@@ -241,7 +242,7 @@ export function BodyScene({
         </Suspense>
         <OrbitControls
           enablePan={false}
-          target={[0, 1.2, 0]}
+          target={[0, 1.32, 0]}
           minDistance={5.5}
           maxDistance={8}
           enableDamping
