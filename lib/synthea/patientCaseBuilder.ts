@@ -11,6 +11,7 @@ import type {
   SymptomOrMeasureObservation,
 } from "@/lib/patient/patientCaseTypes";
 
+import { tryLoadCuratedPatientCaseForVoice } from "@/lib/curated/curatedCaseVoiceSnapshot";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { getLatestEncounterId } from "./encounterBackground";
@@ -289,8 +290,14 @@ export async function loadPatientCaseForVoice(patientId?: string | null): Promis
   patient: SyntheaPatientRow;
   snapshot: PatientCaseSnapshot;
 } | null> {
+  const trimmed = patientId?.trim();
+  if (trimmed) {
+    const curated = await tryLoadCuratedPatientCaseForVoice(trimmed);
+    if (curated) return curated;
+  }
+
   const id =
-    patientId?.trim() ||
+    trimmed ||
     (await pickRandomActivePatientId());
 
   if (!id) return null;
