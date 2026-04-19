@@ -74,13 +74,13 @@ export default function ConsolePage() {
           </div>
           <div className="relative flex flex-col gap-5">
             <h1 className="text-balance text-[40px] font-bold leading-[1.05] tracking-tight text-white md:text-[56px]">
-              Competitive clinical case drills,{" "}
-              <span className="grad-warm-text">deterministic by design.</span>
+              Competitive mystery case drills,{" "}
+              <span className="grad-warm-text">diagnosis hidden.</span>
             </h1>
             <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-on-dark-soft)]">
-              Two curated medical encounters. Fixed patient, fixed flow, fixed
-              URL. Run them on repeat to master high-yield case patterns —
-              Zetamac for clinical reasoning.
+              Two curated mystery patients. Fixed identity, fixed flow, fixed
+              URL — the diagnosis is yours to find. Run them on repeat to
+              master the reasoning, Zetamac-style.
             </p>
           </div>
           <div className="relative mt-2 flex flex-wrap items-center gap-3">
@@ -88,7 +88,7 @@ export default function ConsolePage() {
               href={PRIMARY_CURATED.route}
               className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[14px] font-semibold text-[var(--color-ink)] shadow-[0_1px_0_rgba(15,17,22,0.10)_inset] smooth hover:bg-[#f5f5f7]"
             >
-              Start curated case
+              Meet {PRIMARY_CURATED.title}
               <Icon.ArrowUpRight size={16} />
             </Link>
             <Link
@@ -101,11 +101,11 @@ export default function ConsolePage() {
             {error ? <span className="text-sm text-[#fda4af]">{error}</span> : null}
           </div>
           <div className="relative mt-2 flex flex-wrap items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-on-dark-faint)]">
-            <span>Curated</span>
+            <span>Mystery</span>
             <span>·</span>
             <span>Deterministic</span>
             <span>·</span>
-            <span>High signal</span>
+            <span>Diagnosis hidden</span>
             <span>·</span>
             <span>Built to be re-run</span>
           </div>
@@ -171,18 +171,18 @@ export default function ConsolePage() {
         <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-1">
             <span className="num-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
-              Featured drills
+              Featured patients
             </span>
             <h2 className="text-[22px] font-semibold tracking-tight text-[var(--color-ink)]">
-              Two curated cases available now
+              Two mystery patients available now
             </h2>
             <p className="max-w-xl text-[12.5px] text-[var(--color-ink-muted)]">
-              Pick a drill. Same patient every time. Sharpen the pattern under
-              a fixed clock.
+              Same patient every time. The diagnosis is hidden — interview,
+              examine, and commit. Repeat until the pattern is automatic.
             </p>
           </div>
           <Badge tone="accent" size="sm" dot pulse>
-            Curated · live
+            Diagnosis hidden
           </Badge>
         </div>
 
@@ -292,14 +292,14 @@ function CuratedCaseCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <span className="num-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
-            Drill {number}
+            Patient {number}
           </span>
           <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-            · {curatedCase.topic}
+            · diagnosis hidden
           </span>
         </div>
         <Badge tone="dark" size="xs">
-          Curated
+          Mystery
         </Badge>
       </div>
 
@@ -316,11 +316,11 @@ function CuratedCaseCard({
         <Badge tone={tone} size="xs" dot>
           {curatedCase.difficulty}
         </Badge>
-        <Badge tone="info" size="xs">
-          <Icon.Stethoscope size={10} /> {curatedCase.topic}
-        </Badge>
         <Badge tone="neutral" size="xs">
           <Icon.Calendar size={10} /> ~{curatedCase.estimatedMinutes} min
+        </Badge>
+        <Badge tone="info" size="xs">
+          Diagnosis hidden
         </Badge>
       </div>
 
@@ -332,7 +332,7 @@ function CuratedCaseCard({
           </span>
         </span>
         <Button size="sm" trailingIcon={<Icon.ArrowUpRight size={12} />}>
-          Enter case
+          Open case
         </Button>
       </div>
     </Link>

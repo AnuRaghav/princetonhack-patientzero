@@ -29,7 +29,7 @@ const difficultyTone = (d: CuratedCase["difficulty"]) =>
   d === "Medium" ? "warn" : "danger";
 
 export function CuratedCaseShell({ curatedCase }: Props) {
-  const { title, oneLiner, difficulty, topic, estimatedMinutes } = curatedCase;
+  const { title, oneLiner, difficulty, estimatedMinutes } = curatedCase;
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,14 +44,14 @@ export function CuratedCaseShell({ curatedCase }: Props) {
             Back to console
           </Link>
           <Badge tone="dark" size="xs" dot pulse>
-            Curated case
+            Mystery case
           </Badge>
         </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="num-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-ink-faint)]">
-              Challenge · {curatedCase.slug}
+              Patient · diagnosis hidden
             </span>
           </div>
           <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight text-[var(--color-ink)] md:text-[36px]">
@@ -64,14 +64,14 @@ export function CuratedCaseShell({ curatedCase }: Props) {
             <Badge tone={difficultyTone(difficulty)} size="xs" dot>
               {difficulty}
             </Badge>
-            <Badge tone="info" size="xs">
-              <Icon.Stethoscope size={10} /> {topic}
-            </Badge>
             <Badge tone="neutral" size="xs">
               <Icon.Calendar size={10} /> ~{estimatedMinutes} min
             </Badge>
             <Badge tone="accent" size="xs">
               Deterministic
+            </Badge>
+            <Badge tone="info" size="xs">
+              Diagnosis hidden
             </Badge>
           </div>
         </div>
