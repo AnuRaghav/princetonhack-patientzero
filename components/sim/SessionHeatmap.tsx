@@ -87,7 +87,7 @@ export function SessionHeatmap({
       case 3:
         return "bg-[rgba(255,138,61,0.80)]";
       default:
-        return "bg-[#34d27c]";
+        return "bg-[#22d3ee]";
     }
   };
 
@@ -162,7 +162,7 @@ export function SessionHeatmap({
           <span className="h-[10px] w-[10px] rounded-[2px] bg-[rgba(255,138,61,0.28)]" />
           <span className="h-[10px] w-[10px] rounded-[2px] bg-[rgba(255,138,61,0.55)]" />
           <span className="h-[10px] w-[10px] rounded-[2px] bg-[rgba(255,138,61,0.80)]" />
-          <span className="h-[10px] w-[10px] rounded-[2px] bg-[#34d27c]" />
+          <span className="h-[10px] w-[10px] rounded-[2px] bg-[#22d3ee]" />
           <span>more</span>
         </div>
       </div>

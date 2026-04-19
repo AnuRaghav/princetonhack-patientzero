@@ -17,13 +17,13 @@ const toneClasses: Record<Tone, string> = {
   neutral:
     "text-[var(--color-ink-soft)] bg-[var(--color-surface-2)] border-[var(--color-line)]",
   accent:
-    "text-[var(--color-accent-strong)] bg-[var(--color-accent-soft)] border-[rgba(52,210,124,0.22)]",
+    "text-[var(--color-accent-strong)] bg-[var(--color-accent-soft)] border-[color-mix(in_srgb,var(--color-accent)_24%,transparent)]",
   warn:
     "text-[var(--color-warn-strong)] bg-[var(--color-warn-soft)] border-[rgba(255,138,61,0.22)]",
   danger:
     "text-[#dc2626] bg-[var(--color-danger-soft)] border-[rgba(239,68,68,0.22)]",
   info:
-    "text-[#1d4ed8] bg-[var(--color-info-soft)] border-[rgba(59,130,246,0.22)]",
+    "text-[#0369a1] bg-[var(--color-info-soft)] border-[color-mix(in_srgb,var(--color-info)_26%,transparent)]",
   dark:
     "text-white bg-[var(--color-ink)] border-transparent",
 };

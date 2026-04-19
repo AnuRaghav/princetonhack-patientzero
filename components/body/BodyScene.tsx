@@ -74,12 +74,12 @@ export function BodyScene({
 
   return (
     <div className="relative h-full min-h-[420px] w-full overflow-hidden">
-      {/* Warm halo behind the model — matches the BioSync warm-accent palette */}
+      {/* Ambient halo — indigo / cyan, matches app chrome */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 35%, rgba(255,138,61,0.12), transparent 70%), radial-gradient(120% 80% at 50% 110%, rgba(0,0,0,0.6), transparent 60%)",
+            "radial-gradient(60% 50% at 50% 32%, rgba(99,102,241,0.14), transparent 68%), radial-gradient(120% 80% at 50% 110%, rgba(0,0,0,0.58), transparent 60%)",
         }}
         aria-hidden
       />

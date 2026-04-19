@@ -1,53 +1,54 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   DESIGN TOKENS — "BioSync" inspired
-   Light page chrome holding a single white app shell, with dark hero panels
-   for marquee content. Constrained palette: monochrome + green + orange.
+   DESIGN TOKENS — "Aurora Console"
+   Cool slate chrome, indigo/violet accents, cyan highlights. Modular panels.
    ========================================================================= */
 @theme inline {
   /* Page chrome */
-  --color-page: #e7e8eb;
-  --color-app: #ffffff;
+  --color-page: #dce3f5;
+  --color-app: #fafbfe;
 
   /* Light surfaces */
   --color-surface: #ffffff;
-  --color-surface-2: #fafafb;
-  --color-surface-3: #f3f4f6;
+  --color-surface-2: #f4f6fb;
+  --color-surface-3: #e8ecf6;
 
   /* Lines on light */
-  --color-line: rgba(15, 17, 22, 0.06);
-  --color-line-strong: rgba(15, 17, 22, 0.10);
+  --color-line: rgba(15, 23, 42, 0.055);
+  --color-line-strong: rgba(15, 23, 42, 0.12);
+  /* Module / card outlines — readable on white and on surface-3 */
+  --color-line-emphasis: rgba(15, 23, 42, 0.14);
 
   /* Text on light */
-  --color-ink: #0e0f12;
-  --color-ink-soft: #43464d;
-  --color-ink-muted: #71747c;
-  --color-ink-faint: #a1a4ab;
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+  --color-ink-muted: #64748b;
+  --color-ink-faint: #94a3b8;
 
-  /* Dark hero surfaces */
-  --color-dark: #0a0b0d;
-  --color-dark-2: #131418;
-  --color-dark-3: #1c1e23;
-  --color-dark-line: rgba(255, 255, 255, 0.08);
-  --color-dark-line-strong: rgba(255, 255, 255, 0.14);
+  /* Dark hero surfaces — blue-black */
+  --color-dark: #070b14;
+  --color-dark-2: #0f1629;
+  --color-dark-3: #152238;
+  --color-dark-line: rgba(255, 255, 255, 0.085);
+  --color-dark-line-strong: rgba(255, 255, 255, 0.145);
   --color-on-dark: #ffffff;
   --color-on-dark-soft: rgba(255, 255, 255, 0.66);
   --color-on-dark-muted: rgba(255, 255, 255, 0.44);
   --color-on-dark-faint: rgba(255, 255, 255, 0.28);
 
-  /* Accents */
-  --color-accent: #34d27c;
-  --color-accent-strong: #16a34a;
-  --color-accent-soft: rgba(52, 210, 124, 0.12);
-  --color-warn: #ff8a3d;
+  /* Accents — indigo primary, violet brand, cyan info */
+  --color-accent: #6366f1;
+  --color-accent-strong: #4f46e5;
+  --color-accent-soft: rgba(99, 102, 241, 0.14);
+  --color-warn: #f97316;
   --color-warn-strong: #ea580c;
-  --color-warn-soft: rgba(255, 138, 61, 0.12);
+  --color-warn-soft: rgba(249, 115, 22, 0.12);
   --color-danger: #ef4444;
   --color-danger-soft: rgba(239, 68, 68, 0.10);
-  --color-info: #3b82f6;
-  --color-info-soft: rgba(59, 130, 246, 0.10);
-  --color-brand: #e63946;
+  --color-info: #0ea5e9;
+  --color-info-soft: rgba(14, 165, 233, 0.12);
+  --color-brand: #8b5cf6;
 
   /* Radii */
   --radius-xs: 8px;
@@ -57,60 +58,70 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
-  /* Shadows */
-  --shadow-app: 0 1px 2px rgba(15, 17, 22, 0.04), 0 24px 48px -24px rgba(15, 17, 22, 0.10);
-  --shadow-card: 0 1px 0 rgba(15, 17, 22, 0.02), 0 2px 6px -2px rgba(15, 17, 22, 0.05);
-  --shadow-card-lg: 0 1px 0 rgba(15, 17, 22, 0.02), 0 8px 24px -12px rgba(15, 17, 22, 0.10);
-  --shadow-hero: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.5);
-  --shadow-pop: 0 8px 24px -8px rgba(15, 17, 22, 0.18);
+  /* Shadows — layered + slightly cooler */
+  --shadow-app:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 28px 56px -28px rgba(30, 41, 59, 0.14),
+    0 0 0 1px rgba(99, 102, 241, 0.04);
+  --shadow-card:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 6px 16px -6px rgba(30, 41, 59, 0.1);
+  --shadow-card-lg:
+    0 1px 0 rgba(15, 23, 42, 0.05),
+    0 10px 28px -12px rgba(51, 65, 85, 0.16);
+  --shadow-hero:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 40px -18px rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 12px 32px -10px rgba(30, 41, 59, 0.22);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
 /* =========================================================================
-   ROOT — also declare every token on :root so `var(--color-X)` always
-   resolves, regardless of how Tailwind v4 expands `@theme inline`.
+   ROOT — duplicate tokens for reliable `var(--color-X)` resolution.
    ========================================================================= */
 :root {
   color-scheme: light;
 
-  --color-page: #e7e8eb;
-  --color-app: #ffffff;
+  --color-page: #dce3f5;
+  --color-app: #fafbfe;
 
   --color-surface: #ffffff;
-  --color-surface-2: #fafafb;
-  --color-surface-3: #f3f4f6;
+  --color-surface-2: #f4f6fb;
+  --color-surface-3: #e8ecf6;
 
-  --color-line: rgba(15, 17, 22, 0.06);
-  --color-line-strong: rgba(15, 17, 22, 0.10);
+  --color-line: rgba(15, 23, 42, 0.055);
+  --color-line-strong: rgba(15, 23, 42, 0.12);
+  --color-line-emphasis: rgba(15, 23, 42, 0.14);
 
-  --color-ink: #0e0f12;
-  --color-ink-soft: #43464d;
-  --color-ink-muted: #71747c;
-  --color-ink-faint: #a1a4ab;
+  --color-ink: #0f172a;
+  --color-ink-soft: #475569;
+  --color-ink-muted: #64748b;
+  --color-ink-faint: #94a3b8;
 
-  --color-dark: #0a0b0d;
-  --color-dark-2: #131418;
-  --color-dark-3: #1c1e23;
-  --color-dark-line: rgba(255, 255, 255, 0.08);
-  --color-dark-line-strong: rgba(255, 255, 255, 0.14);
+  --color-dark: #070b14;
+  --color-dark-2: #0f1629;
+  --color-dark-3: #152238;
+  --color-dark-line: rgba(255, 255, 255, 0.085);
+  --color-dark-line-strong: rgba(255, 255, 255, 0.145);
   --color-on-dark: #ffffff;
   --color-on-dark-soft: rgba(255, 255, 255, 0.66);
   --color-on-dark-muted: rgba(255, 255, 255, 0.44);
   --color-on-dark-faint: rgba(255, 255, 255, 0.28);
 
-  --color-accent: #34d27c;
-  --color-accent-strong: #16a34a;
-  --color-accent-soft: rgba(52, 210, 124, 0.12);
-  --color-warn: #ff8a3d;
+  --color-accent: #6366f1;
+  --color-accent-strong: #4f46e5;
+  --color-accent-soft: rgba(99, 102, 241, 0.14);
+  --color-warn: #f97316;
   --color-warn-strong: #ea580c;
-  --color-warn-soft: rgba(255, 138, 61, 0.12);
+  --color-warn-soft: rgba(249, 115, 22, 0.12);
   --color-danger: #ef4444;
   --color-danger-soft: rgba(239, 68, 68, 0.10);
-  --color-info: #3b82f6;
-  --color-info-soft: rgba(59, 130, 246, 0.10);
-  --color-brand: #e63946;
+  --color-info: #0ea5e9;
+  --color-info-soft: rgba(14, 165, 233, 0.12);
+  --color-brand: #8b5cf6;
 
   --radius-xs: 8px;
   --radius-sm: 12px;
@@ -119,14 +130,23 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
-  --shadow-app: 0 1px 2px rgba(15, 17, 22, 0.04), 0 24px 48px -24px rgba(15, 17, 22, 0.10);
-  --shadow-card: 0 1px 0 rgba(15, 17, 22, 0.02), 0 2px 6px -2px rgba(15, 17, 22, 0.05);
-  --shadow-card-lg: 0 1px 0 rgba(15, 17, 22, 0.02), 0 8px 24px -12px rgba(15, 17, 22, 0.10);
-  --shadow-hero: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.5);
-  --shadow-pop: 0 8px 24px -8px rgba(15, 17, 22, 0.18);
+  --shadow-app:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 28px 56px -28px rgba(30, 41, 59, 0.14),
+    0 0 0 1px rgba(99, 102, 241, 0.04);
+  --shadow-card:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 6px 16px -6px rgba(30, 41, 59, 0.1);
+  --shadow-card-lg:
+    0 1px 0 rgba(15, 23, 42, 0.05),
+    0 10px 28px -12px rgba(51, 65, 85, 0.16);
+  --shadow-hero:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 40px -18px rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 12px 32px -10px rgba(30, 41, 59, 0.22);
 }
 
-/* Force-disable any user-agent / OS dark-mode override on this app. */
 html {
   color-scheme: only light;
 }
@@ -136,8 +156,8 @@ html {
    ========================================================================= */
 html,
 body {
-  background: #e7e8eb;
-  color: #0e0f12;
+  background: var(--color-page);
+  color: var(--color-ink);
   font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-feature-settings: "ss01", "ss02", "cv11";
   -webkit-font-smoothing: antialiased;
@@ -151,13 +171,13 @@ body {
 }
 
 ::selection {
-  background: rgba(52, 210, 124, 0.28);
-  color: #0a0b0d;
+  background: rgba(99, 102, 241, 0.22);
+  color: var(--color-ink);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 17, 22, 0.18) transparent;
+  scrollbar-color: rgba(51, 65, 85, 0.22) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
@@ -165,13 +185,13 @@ body {
 }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
-  background: rgba(15, 17, 22, 0.10);
+  background: rgba(51, 65, 85, 0.14);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 17, 22, 0.20);
+  background: rgba(51, 65, 85, 0.26);
   background-clip: padding-box;
   border: 2px solid transparent;
 }
@@ -188,17 +208,26 @@ body {
 
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-app), 0 0 0 4px var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-app), 0 0 0 4px var(--color-accent);
   border-radius: 10px;
 }
 .on-dark :focus-visible {
-  box-shadow: 0 0 0 2px var(--color-dark), 0 0 0 4px var(--color-on-dark);
+  box-shadow: 0 0 0 2px var(--color-dark), 0 0 0 4px rgba(167, 139, 250, 0.95);
 }
 
 /* =========================================================================
    UTILITIES
    ========================================================================= */
 @layer utilities {
+  .page-chrome {
+    background-color: var(--color-page);
+    background-image:
+      radial-gradient(ellipse 90% 55% at 50% -25%, rgba(99, 102, 241, 0.09), transparent),
+      radial-gradient(ellipse 70% 45% at 100% 0%, rgba(14, 165, 233, 0.06), transparent),
+      radial-gradient(rgba(30, 41, 59, 0.045) 1px, transparent 1px);
+    background-size: auto, auto, 18px 18px;
+  }
+
   .num-mono {
     font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
     font-variant-numeric: tabular-nums;
@@ -208,11 +237,18 @@ body {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.025em;
   }
+  /* Kept class name for compatibility — spectrum is violet → indigo → cyan */
   .grad-warm {
-    background: linear-gradient(90deg, #ff5d3a 0%, #ffb04a 35%, #ffd84a 60%, #34d27c 100%);
+    background: linear-gradient(
+      90deg,
+      #a78bfa 0%,
+      #6366f1 38%,
+      #22d3ee 72%,
+      #c4b5fd 100%
+    );
   }
   .grad-warm-text {
-    background: linear-gradient(90deg, #ff5d3a, #ffb04a, #34d27c);
+    background: linear-gradient(90deg, #c4b5fd, #6366f1, #22d3ee);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -226,8 +262,16 @@ body {
       transparent 6px
     );
   }
+  /* Nested modules (e.g. cards inside a section panel) */
+  .nested-module-tray {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-line-emphasis);
+    background: var(--color-surface-3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
   .dot-bg {
-    background-image: radial-gradient(rgba(15, 17, 22, 0.06) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(30, 41, 59, 0.055) 1px, transparent 1px);
     background-size: 14px 14px;
   }
   .on-dark .dot-bg {

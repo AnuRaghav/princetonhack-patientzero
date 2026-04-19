@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e7e8eb",
+  themeColor: "#dce3f5",
   colorScheme: "light",
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
       <head>
         <meta name="color-scheme" content="light" />
       </head>
-      <body className="min-h-full bg-[#e7e8eb] text-[#0e0f12]">
+      <body className="min-h-full bg-[var(--color-page)] text-[var(--color-ink)]">
         <AppShell>{children}</AppShell>
       </body>
     </html>
