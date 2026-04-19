@@ -18,11 +18,11 @@ type SurfaceProps = {
 
 const variantClasses: Record<Variant, string> = {
   card:
-    "bg-[var(--color-surface)] border border-[var(--color-line)] shadow-[var(--shadow-card)]",
+    "bg-[var(--color-surface)] border border-[var(--color-line-emphasis)] shadow-[var(--shadow-card)]",
   muted:
-    "bg-[var(--color-surface-2)] border border-[var(--color-line)]",
+    "bg-[var(--color-surface-2)] border border-[var(--color-line-emphasis)]",
   outline:
-    "bg-transparent border border-[var(--color-line)]",
+    "bg-transparent border border-[var(--color-line-strong)]",
   hero:
     "on-dark bg-[var(--color-dark)] text-[var(--color-on-dark)] border border-[var(--color-dark-line)] shadow-[var(--shadow-hero)]",
   "hero-2":

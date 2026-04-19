@@ -1,5 +1,8 @@
 export { EncounterConversation } from "./EncounterConversation";
-export type { EncounterConversationProps } from "./EncounterConversation";
+export type {
+  EncounterConversationProps,
+  EncounterConversationHandle,
+} from "./EncounterConversation";
 
 export { ConversationTabs } from "./ConversationTabs";
 export { ChatTranscript } from "./ChatTranscript";

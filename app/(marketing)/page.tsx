@@ -52,18 +52,28 @@ export default function ConsolePage() {
   const totalK = totalDisplay >= 1000 ? `${(totalDisplay / 1000).toFixed(1)}k` : String(totalDisplay);
 
   return (
-    <div className="grid gap-3 lg:grid-cols-12">
+    <div className="grid gap-4 lg:grid-cols-12">
       {/* HERO LEFT — Brand / curated drills positioning ============ */}
-      <Surface variant="hero" padding="none" radius="xl" className="lg:col-span-8">
-        <div className="relative flex h-full flex-col gap-7 p-8 md:p-10">
+      <Surface
+        variant="hero"
+        padding="none"
+        radius="xl"
+        className="lg:col-span-8 !bg-transparent"
+      >
+        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
           <div
-            className="pointer-events-none absolute -right-24 top-1/2 h-[360px] w-[360px] -translate-y-1/2 rounded-full opacity-70 blur-3xl"
+            className="absolute inset-0 bg-cover bg-[position:62%_28%] md:bg-center"
+            style={{ backgroundImage: "url(/dna.png)" }}
+          />
+          <div
+            className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(closest-side, rgba(255,138,61,0.30), rgba(52,210,124,0.18) 50%, transparent 70%)",
+                "linear-gradient(145deg, rgba(7,11,20,0.94) 0%, rgba(10,16,32,0.82) 38%, rgba(7,11,20,0.92) 100%), radial-gradient(ellipse 75% 55% at 88% 22%, rgba(99,102,241,0.24), transparent 58%)",
             }}
-            aria-hidden
           />
+        </div>
+        <div className="relative z-[1] flex h-full flex-col gap-7 p-8 md:p-10">
           <div className="relative flex items-start justify-between">
             <div className="text-[13px] font-medium text-[var(--color-on-dark-muted)]">
               Curated clinical drills
@@ -186,10 +196,12 @@ export default function ConsolePage() {
           </Badge>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          {CURATED_CASES.map((c, idx) => (
-            <CuratedCaseCard key={c.slug} curatedCase={c} index={idx} />
-          ))}
+        <div className="nested-module-tray p-3 md:p-4">
+          <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+            {CURATED_CASES.map((c, idx) => (
+              <CuratedCaseCard key={c.slug} curatedCase={c} index={idx} />
+            ))}
+          </div>
         </div>
       </Surface>
 
@@ -282,7 +294,7 @@ function CuratedCaseCard({
   return (
     <Link
       href={curatedCase.route}
-      className="group relative flex flex-col gap-4 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-[var(--color-surface)] p-6 smooth hover:-translate-y-[1px] hover:border-[var(--color-line-strong)] hover:shadow-[var(--shadow-card-lg)]"
+      className="group relative flex flex-col gap-4 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-line-emphasis)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] smooth hover:-translate-y-[1px] hover:border-[color-mix(in_srgb,var(--color-accent)_35%,var(--color-line-emphasis))] hover:shadow-[var(--shadow-card-lg)]"
     >
       <span
         aria-hidden
@@ -324,7 +336,7 @@ function CuratedCaseCard({
         </Badge>
       </div>
 
-      <div className="mt-auto flex items-center justify-between border-t border-[var(--color-line)] pt-4">
+      <div className="mt-auto flex items-center justify-between border-t border-[var(--color-line-strong)] pt-4">
         <span className="text-[11px] text-[var(--color-ink-muted)]">
           Fixed URL ·{" "}
           <span className="num-mono text-[var(--color-ink-soft)]">
@@ -353,7 +365,7 @@ function Step({
   items: string[];
 }) {
   return (
-    <li className="grid grid-cols-[28px_1fr] gap-x-4 border-b border-[var(--color-line)] py-3 last:border-0 last:pb-0 first:pt-0">
+    <li className="grid grid-cols-[28px_1fr] gap-x-4 border-b border-[var(--color-line-strong)] py-3 last:border-0 last:pb-0 first:pt-0">
       <span
         className={cn(
           "mt-0.5 grid h-7 w-7 place-items-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface-2)] text-[var(--color-ink-soft)]",

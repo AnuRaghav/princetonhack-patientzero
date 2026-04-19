@@ -32,15 +32,15 @@ export function AppShell({ children, rightSlot }: Props) {
   const pathname = usePathname() ?? "/";
 
   return (
-    <div className="min-h-screen w-full bg-[var(--color-page)] p-3 md:p-5">
-      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-[1440px] flex-col overflow-hidden rounded-[var(--radius-2xl)] bg-[var(--color-app)] shadow-[var(--shadow-app)]">
+    <div className="page-chrome min-h-screen w-full p-3 md:p-5">
+      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-[1440px] flex-col overflow-hidden rounded-[var(--radius-2xl)] border border-[color-mix(in_srgb,var(--color-accent)_12%,var(--color-line))] bg-[var(--color-app)] shadow-[var(--shadow-app)]">
         {/* TOP BAR — Logo · Pill nav · Controls */}
         <header className="flex items-center justify-between gap-4 px-5 py-4 md:px-7 md:py-5">
           <Link href="/" className="shrink-0">
             <Logo />
           </Link>
 
-          <nav className="hidden items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-surface-2)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] md:inline-flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--color-accent-soft)_35%,var(--color-surface-2))] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] md:inline-flex">
             {NAV.map((item) => {
               const active =
                 item.matchPrefix === "/"
@@ -53,8 +53,8 @@ export function AppShell({ children, rightSlot }: Props) {
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium smooth",
                     active
-                      ? "bg-[var(--color-ink)] text-white shadow-[0_4px_12px_-4px_rgba(15,17,22,0.35)]"
-                      : "text-[var(--color-ink-muted)] hover:bg-black/[0.04] hover:text-[var(--color-ink)]",
+                      ? "bg-[var(--color-accent)] text-white shadow-[0_4px_14px_-4px_rgba(99,102,241,0.45)]"
+                      : "text-[var(--color-ink-muted)] hover:bg-black/[0.05] hover:text-[var(--color-ink)]",
                   )}
                 >
                   <span className={active ? "text-white" : "text-[var(--color-ink-faint)]"}>
@@ -79,7 +79,7 @@ export function AppShell({ children, rightSlot }: Props) {
               <Icon.Bell size={15} />
             </button>
             <div
-              className="grid h-9 w-9 place-items-center rounded-full bg-[linear-gradient(135deg,_#1f2937,_#0a0b0d)] text-[12px] font-semibold text-white"
+              className="grid h-9 w-9 place-items-center rounded-full bg-[linear-gradient(135deg,_#6366f1,_#312e81)] text-[12px] font-semibold text-white shadow-[0_4px_12px_-4px_rgba(99,102,241,0.5)]"
               aria-label="Account"
             >
               MD

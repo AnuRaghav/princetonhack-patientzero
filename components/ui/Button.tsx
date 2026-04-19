@@ -24,9 +24,9 @@ const sizeClasses: Record<Size, string> = {
 
 const variantClasses: Record<Variant, string> = {
   primary: cn(
-    "bg-[var(--color-ink)] text-white font-semibold",
-    "shadow-[0_1px_0_rgba(255,255,255,0.10)_inset,_0_8px_18px_-10px_rgba(15,17,22,0.45)]",
-    "hover:bg-[#1a1c20] active:bg-[#000]",
+    "bg-[var(--color-accent)] text-white font-semibold",
+    "shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,_0_10px_22px_-10px_rgba(99,102,241,0.48)]",
+    "hover:brightness-[1.07] active:brightness-[0.94]",
   ),
   secondary: cn(
     "bg-[var(--color-surface)] text-[var(--color-ink)] font-medium",
@@ -45,7 +45,7 @@ const variantClasses: Record<Variant, string> = {
   ),
   "on-dark": cn(
     "bg-white text-[var(--color-ink)] font-semibold",
-    "shadow-[0_1px_0_rgba(15,17,22,0.10)_inset]",
+    "shadow-[0_1px_0_rgba(15,23,42,0.08)_inset]",
     "hover:bg-[#f5f5f7]",
   ),
 };
