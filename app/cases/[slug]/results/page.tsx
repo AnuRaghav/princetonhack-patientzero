@@ -12,6 +12,10 @@ import {
 } from "@/lib/curated/challengeResult";
 import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
 import { getCuratedCase, isCuratedCaseSlug } from "@/lib/curatedCases";
+import {
+  BEHAVIORAL_RUBRIC,
+  type BehavioralRubricKey,
+} from "@/lib/curated/behavioralScore";
 import type { ScoreCaseResult } from "@/lib/curated/scoreCase";
 
 function formatElapsed(ms: number): string {
@@ -158,7 +162,8 @@ export default function CuratedChallengeResultsPage() {
               </div>
               <p className="mt-2 max-w-xl text-[13px] text-[var(--color-ink-muted)]">
                 Clinical performance (80 pts) combines diagnosis, findings, question quality, and efficiency. Behavioral
-                (20 pts) is reserved for future communication scoring — currently shown as 0.
+                (20 pts) is graded by K2 Think across clarity, structure, hypothesis-driven questioning and four other
+                interview behaviors.
               </p>
             </div>
             <div className="flex gap-6 num-mono text-[13px]">
@@ -293,6 +298,54 @@ export default function CuratedChallengeResultsPage() {
                 · {label}
               </li>
             ))}
+          </ul>
+        </Surface>
+      ) : null}
+
+      {payload.behavioral ? (
+        <Surface variant="card" padding="lg" radius="xl">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">Behavioral breakdown</h2>
+            <span className="num-mono text-[12px] tabular-nums text-[var(--color-ink-muted)]">
+              {Math.round(payload.behavioral.total)} / 20 · scored by K2 Think
+            </span>
+          </div>
+          {payload.behavioral.summary ? (
+            <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
+              {payload.behavioral.summary}
+            </p>
+          ) : null}
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {BEHAVIORAL_RUBRIC.map((item) => {
+              const key = item.key as BehavioralRubricKey;
+              const value = payload.behavioral!.breakdown[key] ?? 0;
+              const comment = payload.behavioral!.comments?.[key];
+              const pct = item.max > 0 ? Math.min(100, Math.max(0, (value / item.max) * 100)) : 0;
+              return (
+                <li
+                  key={item.key}
+                  className="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3"
+                >
+                  <div className="flex items-center justify-between gap-2 text-[12px]">
+                    <span className="font-medium text-[var(--color-ink)]">{item.label}</span>
+                    <span className="num-mono tabular-nums text-[var(--color-ink-muted)]">
+                      {value} / {item.max}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--color-accent)]"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  {comment ? (
+                    <p className="mt-2 text-[11.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                      {comment}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </Surface>
       ) : null}

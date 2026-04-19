@@ -1,5 +1,6 @@
 import type { CuratedCaseSlug } from "@/lib/curatedCases";
 
+import type { BehavioralScoreResult } from "./behavioralScore";
 import type { CuratedChallengeResultV1 } from "./challengeResult";
 import { discoverHelpfulExtraInfo } from "./extraInfoDiscovery";
 import { scoreCase, type ScoreCaseResult } from "./scoreCase";
@@ -18,12 +19,20 @@ export function countUsefulQuestionsFromTranscript(
   return n;
 }
 
-/** Deterministic score for a stored challenge result (same inputs ⇒ same score). */
+/**
+ * Deterministic clinical score for a stored challenge result.
+ * Behavioral input is optional — when omitted, behavioral defaults to 0 so the
+ * results page can still render before async LLM scoring resolves (or after a
+ * graceful fallback). Pass `payload.behavioral` (set after `/api/curated/behavioral-score`)
+ * to fold the LLM-derived 20-point score into the breakdown.
+ */
 export function computeCuratedChallengeScore(payload: CuratedChallengeResultV1): ScoreCaseResult {
   const slug = payload.slug as CuratedCaseSlug;
   const rubric = getScoreRubric(slug);
   const usefulQuestions = countUsefulQuestionsFromTranscript(payload.transcript);
   const extraInfoFound = discoverHelpfulExtraInfo(slug, payload.transcript);
+
+  const behavioral: BehavioralScoreResult | undefined = payload.behavioral;
 
   return scoreCase(
     {
@@ -33,7 +42,8 @@ export function computeCuratedChallengeScore(payload: CuratedChallengeResultV1):
       symptomsRevealed: payload.symptomLabels,
       extraInfoFound,
       finalDiagnosis: payload.diagnosisGuess,
-      behavioralScore: 0,
+      behavioralScore: behavioral?.total ?? 0,
+      behavioralBreakdown: behavioral?.breakdown,
     },
     rubric,
   );
