@@ -2,8 +2,11 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useState } from "react";
 
+import type { DiscoveredFact, EncounterMessage } from "@/components/encounter";
 import { EncounterConversation } from "@/components/encounter";
+import { CuratedInterviewFindings } from "@/components/curated/CuratedInterviewFindings";
 import { Badge, Button, Icon, Surface } from "@/components/ui";
 import type { CuratedCase } from "@/lib/curatedCases";
 
@@ -12,7 +15,7 @@ const BodyScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-[460px] items-center justify-center text-[13px] text-white/60">
+      <div className="flex h-full min-h-[340px] items-center justify-center text-[13px] text-white/60">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-white" />
           Booting 3D scene…
@@ -33,6 +36,8 @@ const difficultyTone = (d: CuratedCase["difficulty"]) =>
 
 export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props) {
   const { title, oneLiner, difficulty, estimatedMinutes, slug } = curatedCase;
+  const [transcriptMessages, setTranscriptMessages] = useState<EncounterMessage[]>([]);
+  const [serverFacts, setServerFacts] = useState<DiscoveredFact[]>([]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -81,37 +86,45 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
       </div>
 
       {/* SPLIT WORKSPACE =========================================== */}
-      <div className="grid gap-3 lg:grid-cols-12">
-        {/* LEFT — 3D body model area */}
-        <Surface
-          variant="hero"
-          padding="none"
-          radius="xl"
-          className="flex flex-col lg:col-span-7"
-        >
-          <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="text-[14px] font-semibold text-white">
-                Patient · 3D exam
+      <div className="grid gap-3 lg:grid-cols-12 lg:items-stretch">
+        {/* LEFT — 3D exam (top) + interview findings (bottom), height matches transcript column */}
+        <div className="flex h-full min-h-[560px] flex-col gap-3 lg:col-span-7">
+          <Surface
+            variant="hero"
+            padding="none"
+            radius="xl"
+            className="flex shrink-0 flex-col overflow-hidden"
+          >
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="text-[14px] font-semibold text-white">
+                  Patient · 3D exam
+                </div>
+                <Badge tone="dark" size="xs">
+                  preview
+                </Badge>
               </div>
-              <Badge tone="dark" size="xs">
-                preview
-              </Badge>
+              <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
+                drag · zoom
+              </span>
             </div>
-            <span className="num-mono text-[10px] uppercase tracking-[0.18em] text-white/40">
-              drag · zoom
-            </span>
-          </div>
 
-          <div className="relative h-[560px] w-full">
-            <BodyScene onExam={() => {}} />
-            <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2">
-              <div className="rounded-full border border-white/[0.14] bg-black/30 px-3 py-1 text-[10.5px] uppercase tracking-[0.18em] text-white/70 backdrop-blur">
-                Interactions arrive with scoring
+            <div className="relative h-[340px] w-full shrink-0">
+              <BodyScene onExam={() => {}} />
+              <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2">
+                <div className="rounded-full border border-white/[0.14] bg-black/30 px-3 py-1 text-[10.5px] uppercase tracking-[0.18em] text-white/70 backdrop-blur">
+                  Interactions arrive with scoring
+                </div>
               </div>
             </div>
-          </div>
-        </Surface>
+          </Surface>
+
+          <CuratedInterviewFindings
+            slug={slug}
+            messages={transcriptMessages}
+            serverFacts={serverFacts}
+          />
+        </div>
 
         {/* RIGHT — Encounter uses curated JSON (`lib/Maria.json` / `Jason.json`) via slug */}
         <EncounterConversation
@@ -123,7 +136,9 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           patientContext={oneLiner}
           initialGreeting={initialPatientGreeting}
           modeDefault="text"
-          className="min-h-[560px] flex-col lg:col-span-5"
+          onTranscriptChange={setTranscriptMessages}
+          onDiscoveredFactsChange={setServerFacts}
+          className="flex h-full min-h-[560px] flex-col lg:col-span-5"
         />
       </div>
 
