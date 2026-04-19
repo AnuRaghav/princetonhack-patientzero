@@ -21,6 +21,8 @@ type Props = {
   onExam: (intent: ExamIntent) => void;
   /** GLB under `public/models/`. Omit to use the default male mesh (sim lab). */
   modelSrc?: string;
+  /** Hotspot `id`s to pulse after a new interview symptom (subset of rendered regions). */
+  pulseTargets?: readonly ExamTarget[];
 };
 
 type ModelBounds = {
@@ -33,8 +35,9 @@ function mapRegionToIntent(region: ExamTarget): ExamIntent {
   return { action: REGION_INFO[region].action, target: region };
 }
 
-export function BodyScene({ onExam, modelSrc }: Props) {
+export function BodyScene({ onExam, modelSrc, pulseTargets }: Props) {
   const highlight = useSimUiStore((s) => s.bodyHighlight);
+  const pulse = useCallback((id: ExamTarget) => pulseTargets?.includes(id) ?? false, [pulseTargets]);
   const [bounds, setBounds] = useState<ModelBounds | null>(null);
 
   const handleSelect = (target: ExamTarget) => {
@@ -138,6 +141,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 radius={hotspotLayout.head.radius}
                 onSelect={handleSelect}
                 selected={highlight === "head"}
+                pulse={pulse("head")}
               />
               <BodyHotspot
                 id="chest"
@@ -146,6 +150,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#60a5fa"
                 onSelect={handleSelect}
                 selected={highlight === "chest"}
+                pulse={pulse("chest")}
               />
               <BodyHotspot
                 id="stomach"
@@ -154,6 +159,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#22d3ee"
                 onSelect={handleSelect}
                 selected={highlight === "stomach"}
+                pulse={pulse("stomach")}
               />
               <BodyHotspot
                 id="arms"
@@ -162,6 +168,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#a78bfa"
                 onSelect={handleSelect}
                 selected={highlight === "arms"}
+                pulse={pulse("arms")}
               />
               <BodyHotspot
                 id="arms"
@@ -170,6 +177,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#a78bfa"
                 onSelect={handleSelect}
                 selected={highlight === "arms"}
+                pulse={pulse("arms")}
               />
               <BodyHotspot
                 id="legs"
@@ -178,6 +186,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#34d399"
                 onSelect={handleSelect}
                 selected={highlight === "legs"}
+                pulse={pulse("legs")}
               />
               <BodyHotspot
                 id="legs"
@@ -186,6 +195,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#34d399"
                 onSelect={handleSelect}
                 selected={highlight === "legs"}
+                pulse={pulse("legs")}
               />
               <BodyHotspot
                 id="joints"
@@ -194,6 +204,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#f59e0b"
                 onSelect={handleSelect}
                 selected={highlight === "joints"}
+                pulse={pulse("joints")}
               />
               <BodyHotspot
                 id="joints"
@@ -202,6 +213,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#f59e0b"
                 onSelect={handleSelect}
                 selected={highlight === "joints"}
+                pulse={pulse("joints")}
               />
               <BodyHotspot
                 id="joints"
@@ -210,6 +222,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#f59e0b"
                 onSelect={handleSelect}
                 selected={highlight === "joints"}
+                pulse={pulse("joints")}
               />
               <BodyHotspot
                 id="joints"
@@ -218,6 +231,7 @@ export function BodyScene({ onExam, modelSrc }: Props) {
                 color="#f59e0b"
                 onSelect={handleSelect}
                 selected={highlight === "joints"}
+                pulse={pulse("joints")}
               />
             </>
           ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import type { EncounterMessage } from "@/components/encounter";
 import { REGION_INFO } from "@/components/body/regionInfo";
@@ -10,19 +10,60 @@ import { useSimUiStore } from "@/lib/store/simUiStore";
 import type { ExamTarget } from "@/types/exam";
 import { Badge, Surface } from "@/components/ui";
 
+export type NewSymptomDiscoveredPayload = {
+  regions: ExamTarget[];
+  labels: string[];
+};
+
 type Props = {
   slug: CuratedCaseSlug;
   messages: EncounterMessage[];
   /** Only dialogue after Start assessment is used for discovery */
   assessmentStartedAt: number | null;
+  /** Fired when a new symptom key appears in dialogue (incremental after each assessment start). */
+  onNewSymptomDiscovered?: (payload: NewSymptomDiscoveredPayload) => void;
 };
 
 function isExamTarget(v: string | null): v is ExamTarget {
   return v != null && v in REGION_INFO;
 }
 
-export function CuratedInterviewFindings({ slug, messages, assessmentStartedAt }: Props) {
+export function CuratedInterviewFindings({
+  slug,
+  messages,
+  assessmentStartedAt,
+  onNewSymptomDiscovered,
+}: Props) {
   const bodyHighlight = useSimUiStore((s) => s.bodyHighlight);
+  const prevKeysRef = useRef<Set<string>>(new Set());
+
+  /**
+   * Snapshot known symptom keys when a new assessment window starts (no toast).
+   * Intentionally omits `messages` from deps so later transcript updates do not reset incremental discovery.
+   */
+  useEffect(() => {
+    if (assessmentStartedAt == null) {
+      prevKeysRef.current.clear();
+      return;
+    }
+    const scoped = messages.filter((m) => m.createdAt >= assessmentStartedAt);
+    const discovered = discoverInterviewSymptoms(slug, scoped);
+    prevKeysRef.current = new Set(discovered.map((d) => d.key));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-bootstrap when the assessment instant changes
+  }, [assessmentStartedAt, slug]);
+
+  /** Incremental new discoveries as transcript grows. */
+  useEffect(() => {
+    if (assessmentStartedAt == null || !onNewSymptomDiscovered) return;
+    const scoped = messages.filter((m) => m.createdAt >= assessmentStartedAt);
+    const discovered = discoverInterviewSymptoms(slug, scoped);
+    const newly = discovered.filter((d) => !prevKeysRef.current.has(d.key));
+    if (newly.length === 0) return;
+    for (const d of newly) prevKeysRef.current.add(d.key);
+    const regions = [...new Set(newly.flatMap((d) => d.regions))];
+    const labels = newly.map((d) => d.label);
+    onNewSymptomDiscovered({ regions, labels });
+  }, [assessmentStartedAt, messages, slug, onNewSymptomDiscovered]);
 
   const { regionLabel, rows } = useMemo(() => {
     const scoped =
