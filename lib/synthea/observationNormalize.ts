@@ -68,6 +68,57 @@ export function inferQuestionKey(question: string): string | undefined {
   return undefined;
 }
 
+type ClassificationContext = {
+  cat: string;
+  desc: string;
+  descLower: string;
+  val: string;
+  questionLike: boolean;
+  numericAns: boolean;
+  typeLower: string;
+};
+
+const CHIEF_COMPLAINT_RE = /chief complaint|reason for visit|problem list|concern\b/i;
+const PAIN_SCALE_RE = /pain|severity|scale/i;
+const SYMPTOM_LOOSE_RE = /complaint|symptom|feeling/i;
+
+function classifyVital(ctx: ClassificationContext): ObservationBucketKind {
+  if (ctx.questionLike && !ctx.numericAns && ctx.val) return "screeningAnswer";
+  return "vital";
+}
+
+function classifyLab(ctx: ClassificationContext): ObservationBucketKind {
+  if (ctx.questionLike && !ctx.numericAns) return "screeningAnswer";
+  return "lab";
+}
+
+function classifyQuestionWithValue(ctx: ClassificationContext): ObservationBucketKind {
+  if (IGNORE_INSURANCE_ADMIN.test(ctx.descLower)) return "ignore";
+  if (
+    SCREENING_SCALE.test(ctx.descLower) ||
+    ctx.cat.includes("survey") ||
+    ctx.cat.includes("assessment")
+  ) {
+    return "screeningAnswer";
+  }
+  if (USEFUL_SOCIAL.test(ctx.descLower)) return "socialContext";
+  if (CHIEF_COMPLAINT_RE.test(ctx.descLower)) return "symptom";
+  if (ctx.numericAns && (VITAL_TERMS.test(ctx.descLower) || LAB_TERMS.test(ctx.descLower))) {
+    return LAB_TERMS.test(ctx.descLower) ? "lab" : "vital";
+  }
+  // Long anonymous surveys default to screening, not chief complaint.
+  if (ctx.desc.length >= 120) return "screeningAnswer";
+  return "socialContext";
+}
+
+function classifyNumericLike(ctx: ClassificationContext): ObservationBucketKind {
+  if (VITAL_TERMS.test(ctx.descLower)) return "vital";
+  if (LAB_TERMS.test(ctx.descLower)) return "lab";
+  if (PAIN_SCALE_RE.test(ctx.descLower)) return "symptom";
+  if (SYMPTOM_TERMS.test(ctx.descLower)) return "symptom";
+  return "symptom";
+}
+
 export function classifyObservation(row: SyntheaObservationRow): ObservationBucketKind {
   const cat = (row.CATEGORY ?? "").toLowerCase();
   const desc = normalizeWhitespace((row.DESCRIPTION ?? "").trim());
@@ -75,52 +126,24 @@ export function classifyObservation(row: SyntheaObservationRow): ObservationBuck
   const val = valueToString(row.VALUE);
 
   if (!desc && !val) return "ignore";
-
   if (cat.includes("imaging") || cat.includes("procedure")) return "ignore";
   if (ADMIN_JUNK.test(descLower)) return "ignore";
 
-  const questionLike = isQuestionLikeDescription(desc);
-  const numericAns = looksLikeNumericMeasurement(val);
-  const typeLower = (row.TYPE ?? "").toLowerCase();
+  const ctx: ClassificationContext = {
+    cat,
+    desc,
+    descLower,
+    val,
+    questionLike: isQuestionLikeDescription(desc),
+    numericAns: looksLikeNumericMeasurement(val),
+    typeLower: (row.TYPE ?? "").toLowerCase(),
+  };
 
-  if (cat.includes("vital") || cat.includes("vital-sign")) {
-    if (questionLike && !numericAns && val) return "screeningAnswer";
-    return "vital";
-  }
-
-  if (cat.includes("laboratory") || cat.includes("lab")) {
-    if (questionLike && !numericAns) return "screeningAnswer";
-    return "lab";
-  }
-
-  if (questionLike && val) {
-    if (IGNORE_INSURANCE_ADMIN.test(descLower)) return "ignore";
-    if (SCREENING_SCALE.test(descLower) || cat.includes("survey") || cat.includes("assessment")) {
-      return "screeningAnswer";
-    }
-    if (USEFUL_SOCIAL.test(descLower)) return "socialContext";
-    if (/chief complaint|reason for visit|problem list|concern\b/i.test(descLower)) {
-      return "symptom";
-    }
-    if (numericAns && (VITAL_TERMS.test(descLower) || LAB_TERMS.test(descLower))) {
-      return LAB_TERMS.test(descLower) ? "lab" : "vital";
-    }
-    // Long anonymous surveys default to screening, not chief complaint.
-    if (desc.length >= 120) return "screeningAnswer";
-    return "socialContext";
-  }
-
-  if (numericAns || typeLower.includes("quantity")) {
-    if (VITAL_TERMS.test(descLower)) return "vital";
-    if (LAB_TERMS.test(descLower)) return "lab";
-    if (/pain|severity|scale/i.test(descLower)) return "symptom";
-    if (SYMPTOM_TERMS.test(descLower)) return "symptom";
-    return "symptom";
-  }
-
-  if (SYMPTOM_TERMS.test(descLower) || /complaint|symptom|feeling/i.test(descLower)) {
-    return "symptom";
-  }
+  if (cat.includes("vital") || cat.includes("vital-sign")) return classifyVital(ctx);
+  if (cat.includes("laboratory") || cat.includes("lab")) return classifyLab(ctx);
+  if (ctx.questionLike && val) return classifyQuestionWithValue(ctx);
+  if (ctx.numericAns || ctx.typeLower.includes("quantity")) return classifyNumericLike(ctx);
+  if (SYMPTOM_TERMS.test(descLower) || SYMPTOM_LOOSE_RE.test(descLower)) return "symptom";
 
   return "ignore";
 }

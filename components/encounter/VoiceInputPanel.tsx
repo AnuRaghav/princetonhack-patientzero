@@ -32,6 +32,71 @@ const STATUS_LABELS: Record<EncounterStatus, string> = {
   error: "Something went wrong",
 };
 
+const SPEAKING_INDICATOR_VARIANT: Partial<
+  Record<EncounterStatus, "thinking" | "speaking" | "listening">
+> = {
+  thinking: "thinking",
+  speaking: "speaking",
+  listening: "listening",
+};
+
+function UnsupportedNotice({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-4 text-center text-[12px] text-[var(--color-ink-muted)]",
+        className,
+      )}
+    >
+      Voice input isn&rsquo;t available in this browser. Use the Text tab to
+      continue, or grant microphone access and try again.
+    </div>
+  );
+}
+
+function resolveRingTone(isListening: boolean, isSpeaking: boolean): string {
+  if (isListening) return "text-[#ef4444]";
+  if (isSpeaking) return "text-[var(--color-accent)]";
+  return "text-transparent";
+}
+
+function StatusRow({ status }: { status: EncounterStatus }) {
+  const variant = SPEAKING_INDICATOR_VARIANT[status];
+  return (
+    <div className="flex min-h-[20px] items-center gap-2">
+      {variant ? <SpeakingIndicator variant={variant} /> : null}
+      <span className="text-[13px] font-medium text-[var(--color-ink)]">
+        {STATUS_LABELS[status]}
+      </span>
+    </div>
+  );
+}
+
+function PartialOrHint({
+  pendingPartial,
+  transport,
+}: {
+  pendingPartial: string;
+  transport?: "browser" | "server";
+}) {
+  if (pendingPartial) {
+    return (
+      <div className="w-full max-w-md rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-[12px] italic text-[var(--color-ink-soft)]">
+        “{pendingPartial}”
+      </div>
+    );
+  }
+  const hint =
+    transport === "server"
+      ? "Tap the mic, speak, then tap again to send."
+      : "Speak naturally. Your message is sent automatically when you pause.";
+  return (
+    <p className="max-w-md text-center text-[11px] text-[var(--color-ink-muted)]">
+      {hint}
+    </p>
+  );
+}
+
 /**
  * ChatGPT-style voice input UI: a single large mic affordance with a clear
  * status caption, animated ring while listening, live partial transcript,
@@ -51,33 +116,17 @@ export function VoiceInputPanel({
   locked = false,
 }: Props) {
   if (!isSupported) {
-    return (
-      <div
-        className={cn(
-          "rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-4 text-center text-[12px] text-[var(--color-ink-muted)]",
-          className,
-        )}
-      >
-        Voice input isn&rsquo;t available in this browser. Use the Text tab to
-        continue, or grant microphone access and try again.
-      </div>
-    );
+    return <UnsupportedNotice className={className} />;
   }
 
   const showStop = isListening || isSpeaking || status === "thinking";
-  const ringTone = isListening
-    ? "text-[#ef4444]"
-    : isSpeaking
-    ? "text-[var(--color-accent)]"
-    : "text-transparent";
+  const ringTone = resolveRingTone(isListening, isSpeaking);
+  const ringHidden = !(isListening || isSpeaking);
 
   const onMicClick = () => {
     if (locked) return;
-    if (isListening) {
-      onStop();
-    } else {
-      onStart();
-    }
+    if (isListening) onStop();
+    else onStart();
   };
 
   return (
@@ -92,7 +141,7 @@ export function VoiceInputPanel({
           className={cn(
             "encounter-mic-ring absolute inset-0 rounded-full",
             ringTone,
-            !(isListening || isSpeaking) && "hidden",
+            ringHidden && "hidden",
           )}
           aria-hidden
         />
@@ -113,34 +162,9 @@ export function VoiceInputPanel({
         </button>
       </div>
 
-      <div className="flex min-h-[20px] items-center gap-2">
-        {status === "thinking" || status === "speaking" || status === "listening" ? (
-          <SpeakingIndicator
-            variant={
-              status === "thinking"
-                ? "thinking"
-                : status === "speaking"
-                ? "speaking"
-                : "listening"
-            }
-          />
-        ) : null}
-        <span className="text-[13px] font-medium text-[var(--color-ink)]">
-          {STATUS_LABELS[status]}
-        </span>
-      </div>
+      <StatusRow status={status} />
 
-      {pendingPartial ? (
-        <div className="w-full max-w-md rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-2)] px-3 py-2 text-center text-[12px] italic text-[var(--color-ink-soft)]">
-          “{pendingPartial}”
-        </div>
-      ) : (
-        <p className="max-w-md text-center text-[11px] text-[var(--color-ink-muted)]">
-          {transport === "server"
-            ? "Tap the mic, speak, then tap again to send."
-            : "Speak naturally. Your message is sent automatically when you pause."}
-        </p>
-      )}
+      <PartialOrHint pendingPartial={pendingPartial} transport={transport} />
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         {showStop ? (

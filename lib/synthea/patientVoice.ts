@@ -33,39 +33,54 @@ export function humanizeConditionDescription(desc: string): string {
     .trim();
 }
 
+function ensureSentence(s: string): string {
+  return s.endsWith(".") ? s : `${s}.`;
+}
+
+function scrubbedDescription(o: SyntheaObservationRow): string | null {
+  return scrubClinicalCodingText((o.DESCRIPTION ?? "").trim());
+}
+
+function isPreferredCategory(o: SyntheaObservationRow): boolean {
+  const cat = (o.CATEGORY ?? "").toLowerCase();
+  return cat.includes("survey") || cat.includes("symptom") || cat.includes("social");
+}
+
+function firstScrubbedSentence(
+  observations: SyntheaObservationRow[],
+  predicate?: (o: SyntheaObservationRow) => boolean,
+): string | null {
+  for (const o of observations) {
+    if (predicate && !predicate(o)) continue;
+    const s = scrubbedDescription(o);
+    if (s) return ensureSentence(s);
+  }
+  return null;
+}
+
+function complaintFromConditions(conditions: SyntheaConditionRow[]): string | null {
+  const rawCond = conditions[0]?.DESCRIPTION?.trim();
+  if (!rawCond) return null;
+  const h = humanizeConditionDescription(rawCond);
+  if (!h || /\[[^\]]+\]/.test(h)) return null;
+  return `I've been having trouble related to ${h.toLowerCase().replace(/\.$/, "")}.`;
+}
+
 /** Lay chief complaint from encounter observations + fallback to condition wording. */
 export function pickLayChiefComplaint(
   observations: SyntheaObservationRow[],
   conditions: SyntheaConditionRow[],
 ): string {
-  const usable = observations.filter((o) => {
-    if (isClinicianOnlyObservation(o)) return false;
-    const s = scrubClinicalCodingText((o.DESCRIPTION ?? "").trim());
-    return Boolean(s);
-  });
+  const usable = observations.filter(
+    (o) => !isClinicianOnlyObservation(o) && Boolean(scrubbedDescription(o)),
+  );
 
-  for (const o of usable) {
-    const cat = (o.CATEGORY ?? "").toLowerCase();
-    if (cat.includes("survey") || cat.includes("symptom") || cat.includes("social")) {
-      const s = scrubClinicalCodingText((o.DESCRIPTION ?? "").trim());
-      if (s) return s.endsWith(".") ? s : `${s}.`;
-    }
-  }
-
-  for (const o of usable) {
-    const s = scrubClinicalCodingText((o.DESCRIPTION ?? "").trim());
-    if (s) return s.endsWith(".") ? s : `${s}.`;
-  }
-
-  const rawCond = conditions[0]?.DESCRIPTION?.trim();
-  if (rawCond) {
-    const h = humanizeConditionDescription(rawCond);
-    if (h && !/\[[^\]]+\]/.test(h)) {
-      return `I've been having trouble related to ${h.toLowerCase().replace(/\.$/, "")}.`;
-    }
-  }
-
-  return "I've been feeling off enough that I wanted to get checked out.";
+  return (
+    firstScrubbedSentence(usable, isPreferredCategory) ??
+    firstScrubbedSentence(usable) ??
+    complaintFromConditions(conditions) ??
+    "I've been feeling off enough that I wanted to get checked out."
+  );
 }
 
 /**

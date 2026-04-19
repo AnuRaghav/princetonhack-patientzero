@@ -4,11 +4,65 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const DAYS = 7 * 12; // 12 weeks
 
+type SessionRow = {
+  id: string;
+  status: string | null;
+  created_at: string;
+  patient: string | null;
+};
+
+type DayBucket = { date: string; count: number };
+
 function dayKey(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function summarizeRows(rows: SessionRow[]): {
+  counts: Map<string, number>;
+  uniqueCases: Set<string>;
+  completed: number;
+} {
+  const counts = new Map<string, number>();
+  const uniqueCases = new Set<string>();
+  let completed = 0;
+  for (const r of rows) {
+    const k = dayKey(new Date(r.created_at));
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+    if (r.patient) uniqueCases.add(r.patient);
+    if (r.status === "completed") completed += 1;
+  }
+  return { counts, uniqueCases, completed };
+}
+
+function buildBuckets(since: Date, counts: Map<string, number>): DayBucket[] {
+  const buckets: DayBucket[] = [];
+  for (let i = 0; i < DAYS; i++) {
+    const d = new Date(since);
+    d.setUTCDate(since.getUTCDate() + i);
+    const k = dayKey(d);
+    buckets.push({ date: k, count: counts.get(k) ?? 0 });
+  }
+  return buckets;
+}
+
+function computeStreak(buckets: DayBucket[]): number {
+  let streak = 0;
+  for (let i = buckets.length - 1; i >= 0; i--) {
+    if ((buckets[i]?.count ?? 0) <= 0) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+function computeBestDay(buckets: DayBucket[]): DayBucket {
+  let best: DayBucket = { date: buckets[0]?.date ?? dayKey(new Date()), count: 0 };
+  for (const b of buckets) {
+    if (b.count > best.count) best = b;
+  }
+  return best;
 }
 
 /**
@@ -34,49 +88,17 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const rows = (data ?? []) as Array<{
-      id: string;
-      status: string | null;
-      created_at: string;
-      patient: string | null;
-    }>;
-
-    const counts = new Map<string, number>();
-    const uniqueCases = new Set<string>();
-    let completed = 0;
-    for (const r of rows) {
-      const k = dayKey(new Date(r.created_at));
-      counts.set(k, (counts.get(k) ?? 0) + 1);
-      if (r.patient) uniqueCases.add(r.patient);
-      if (r.status === "completed") completed += 1;
-    }
-
-    const buckets: { date: string; count: number }[] = [];
-    for (let i = 0; i < DAYS; i++) {
-      const d = new Date(since);
-      d.setUTCDate(since.getUTCDate() + i);
-      const k = dayKey(d);
-      buckets.push({ date: k, count: counts.get(k) ?? 0 });
-    }
-
-    let streak = 0;
-    for (let i = buckets.length - 1; i >= 0; i--) {
-      if ((buckets[i]?.count ?? 0) > 0) streak += 1;
-      else break;
-    }
-
-    let bestDay = { date: buckets[0]?.date ?? dayKey(new Date()), count: 0 };
-    for (const b of buckets) {
-      if (b.count > bestDay.count) bestDay = b;
-    }
+    const rows = (data ?? []) as SessionRow[];
+    const { counts, uniqueCases, completed } = summarizeRows(rows);
+    const buckets = buildBuckets(since, counts);
 
     return NextResponse.json({
       buckets,
       total: rows.length,
       completed,
       uniqueCases: uniqueCases.size,
-      streak,
-      bestDay,
+      streak: computeStreak(buckets),
+      bestDay: computeBestDay(buckets),
       windowDays: DAYS,
     });
   } catch (e) {
