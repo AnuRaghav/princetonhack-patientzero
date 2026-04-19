@@ -14,7 +14,13 @@ import { cn } from "@/components/ui/cn";
 import { buildCuratedChallengeResult, curatedChallengeStorageKey } from "@/lib/curated/challengeResult";
 import { computeCuratedChallengeScore } from "@/lib/curated/curatedChallengeScore";
 import { useSimUiStore } from "@/lib/store/simUiStore";
-import type { CuratedCase } from "@/lib/curatedCases";
+import type { CuratedCase, CuratedCaseSlug } from "@/lib/curatedCases";
+
+/** Paths must match filenames in `public/models/` exactly (case-sensitive on Linux/production). */
+const CURATED_BODY_MODEL: Record<CuratedCaseSlug, string> = {
+  "maria-wolf": "/models/maria.glb",
+  "jason-mehta": "/models/jason.glb",
+};
 
 const BodyScene = dynamic(
   () => import("@/components/body/BodyScene").then((m) => ({ default: m.BodyScene })),
@@ -173,7 +179,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
       <div
         className={cn(
           "relative grid gap-3 lg:grid-cols-12 lg:items-stretch",
-          !challengeStarted && "pointer-events-none opacity-[0.38]",
+          !challengeStarted && "pointer-events-none",
         )}
       >
         {/* LEFT — 3D exam (top) + interview findings (bottom), height matches transcript column */}
@@ -200,6 +206,7 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
 
             <div className="relative h-[340px] w-full shrink-0">
               <BodyScene
+                modelSrc={CURATED_BODY_MODEL[slug]}
                 onExam={(intent) => {
                   setBodyHighlight(intent.target);
                 }}
@@ -234,6 +241,14 @@ export function CuratedCaseShell({ curatedCase, initialPatientGreeting }: Props)
           interactionLocked={!challengeStarted}
           className="flex h-full min-h-[560px] flex-col lg:col-span-5"
         />
+
+        {/* Dim workspace without applying opacity to ancestors of WebGL (opacity breaks canvas compositing). */}
+        {!challengeStarted ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-[45] bg-black/45"
+            aria-hidden
+          />
+        ) : null}
 
         {!challengeStarted ? (
           <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center px-4">

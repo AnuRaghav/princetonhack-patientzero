@@ -1,8 +1,9 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import { useCallback, useMemo, useState } from "react";
+import { Environment, OrbitControls } from "@react-three/drei";
+import { AgXToneMapping, SRGBColorSpace } from "three";
+import { Suspense, useCallback, useMemo, useState } from "react";
 
 import { useSimUiStore } from "@/lib/store/simUiStore";
 import type { ExamAction, ExamTarget } from "@/types/exam";
@@ -18,6 +19,8 @@ export type ExamIntent = {
 
 type Props = {
   onExam: (intent: ExamIntent) => void;
+  /** GLB under `public/models/`. Omit to use the default male mesh (sim lab). */
+  modelSrc?: string;
 };
 
 type ModelBounds = {
@@ -30,7 +33,7 @@ function mapRegionToIntent(region: ExamTarget): ExamIntent {
   return { action: REGION_INFO[region].action, target: region };
 }
 
-export function BodyScene({ onExam }: Props) {
+export function BodyScene({ onExam, modelSrc }: Props) {
   const highlight = useSimUiStore((s) => s.bodyHighlight);
   const [bounds, setBounds] = useState<ModelBounds | null>(null);
 
@@ -104,15 +107,30 @@ export function BodyScene({ onExam }: Props) {
         <span className="num uppercase tracking-[0.18em]">orbital · 35° fov</span>
       </div>
 
-      <Canvas camera={{ position: [0, 0.6, 7], fov: 35 }}>
+      <Canvas
+        camera={{ position: [0, 0.6, 7], fov: 35 }}
+        gl={{
+          alpha: false,
+          // AgX tends to preserve color better than ACES on stylized / game assets.
+          toneMapping: AgXToneMapping,
+          toneMappingExposure: 1.15,
+          outputColorSpace: SRGBColorSpace,
+        }}
+      >
         <color attach="background" args={["#0a0b0d"]} />
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
-        <directionalLight position={[0, 2, 5]} intensity={0.6} />
-        <directionalLight position={[0, 3, -5]} intensity={0.5} />
-        <group position={[0, -0.5, 0]}>
-          <BodyModel onBoundsChange={handleBoundsChange} />
-          {hotspotLayout ? (
+        <hemisphereLight args={["#ffe8dc", "#3a3540"]} intensity={0.55} />
+        <ambientLight intensity={0.28} color="#f0e8e4" />
+        <directionalLight position={[5, 8, 5]} intensity={1.25} color="#fff5ef" castShadow />
+        <directionalLight position={[-5.5, 5, -2]} intensity={0.65} color="#c8dcff" />
+        <directionalLight position={[0, 3, -5]} intensity={0.4} color="#ffe0cc" />
+        <pointLight position={[2.2, 1.6, 4.5]} intensity={1.35} color="#ffb090" distance={14} decay={2} />
+        <pointLight position={[-3, 2, 3]} intensity={0.55} color="#a8c8ff" distance={14} decay={2} />
+        {/* useGLTF + Environment suspend — isolated so lights/camera stay stable */}
+        <Suspense fallback={null}>
+          <Environment preset="sunset" environmentIntensity={1.35} />
+          <group position={[0, -0.5, 0]}>
+            <BodyModel modelSrc={modelSrc} onBoundsChange={handleBoundsChange} />
+            {hotspotLayout ? (
             <>
               <BodyHotspot
                 id="head"
@@ -203,7 +221,8 @@ export function BodyScene({ onExam }: Props) {
               />
             </>
           ) : null}
-        </group>
+          </group>
+        </Suspense>
         <OrbitControls
           enablePan={false}
           target={[0, 1.2, 0]}
