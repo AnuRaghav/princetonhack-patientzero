@@ -1,20 +1,18 @@
 import "server-only";
 
-import { getGeminiApiKey, postGeminiGenerateContent } from "./geminiRest";
+import { getGeminiApiKey, isGeminiConfigured, postGeminiGenerateContent } from "./geminiRest";
 
 /**
- * Google AI Studio API key for Gemini REST (`GEMINI_API_KEY`).
- * Model is fixed to `gemini-2.5-flash` in `geminiRest.ts`.
+ * Credentials for `generateContent`: AI Studio (`GEMINI_API_KEY`) or Vertex (project + ADC; apiKey null).
  */
-export function getGoogleGenAiCredentials(): { apiKey: string } | null {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
-  return { apiKey };
+export function getGoogleGenAiCredentials(): { apiKey: string | null } | null {
+  if (!isGeminiConfigured()) return null;
+  return { apiKey: getGeminiApiKey() };
 }
 
 /**
  * Try JSON MIME mode first (when supported), then plain text generation.
- * All calls use REST `generateContent` for `gemini-2.5-flash`.
+ * All calls use REST `generateContent` with the resolved model id (see `getGeminiGenerateModelId`).
  */
 export async function googleGenerateMultiAttempt(args: {
   systemInstruction: string;
@@ -31,7 +29,7 @@ export async function googleGenerateMultiAttempt(args: {
   const contents = [{ parts: [{ text: args.userText }] }];
 
   const jsonAttempt = await postGeminiGenerateContent({
-    apiKey: cred.apiKey,
+    apiKey: cred.apiKey ?? undefined,
     systemInstruction: args.systemInstruction,
     contents,
     generationConfig: {
@@ -40,12 +38,13 @@ export async function googleGenerateMultiAttempt(args: {
       responseMimeType: "application/json",
     },
   });
-  if (jsonAttempt?.trim()) return jsonAttempt;
+  if (jsonAttempt.ok) return jsonAttempt.text;
 
-  return postGeminiGenerateContent({
-    apiKey: cred.apiKey,
+  const plain = await postGeminiGenerateContent({
+    apiKey: cred.apiKey ?? undefined,
     systemInstruction: args.systemInstruction,
     contents,
     generationConfig: { temperature, maxOutputTokens },
   });
+  return plain.ok ? plain.text : null;
 }
